@@ -2,7 +2,7 @@ extern crate regex;
 
 use regex::Regex;
 use std::collections::HashMap;
-use std::owned::Box;
+use std::boxed::Box;
 use std::string::String;
 
 struct ImagePathFilter {
@@ -17,7 +17,7 @@ impl ImagePathFilter {
     fn add_image_regex(&mut self, extension: Box<String>, expr: &str) {
         let re = match Regex::new(expr) {
             Ok(re) => box re,
-            Err(err) => fail!("{}", err),
+            Err(err) => panic!("{}", err),
         };
         self.patterns.insert(extension, re);
     }
