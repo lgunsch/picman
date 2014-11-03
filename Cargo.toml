@@ -1,0 +1,4 @@
+[package]
+name = "picman"
+version = "0.0.1"
+authors = ["Lewis Gunsch <lgunsch@gmail.com>"]
