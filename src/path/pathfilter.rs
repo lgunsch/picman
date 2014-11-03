@@ -1,6 +1,6 @@
 extern crate regex;
 
-use regex::Regex;
+use self::regex::Regex;
 use std::collections::HashMap;
 use std::boxed::Box;
 use std::string::String;
