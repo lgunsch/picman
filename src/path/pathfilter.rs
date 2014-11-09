@@ -1,24 +1,23 @@
 use regex::{Regex, Error};
 use std::collections::HashMap;
-use std::string::String;
 use std::vec::Vec;
 
-struct PathFilter {
-    patterns: HashMap<String, Regex>
+struct PathFilter<'a> {
+    patterns: HashMap<&'a str, Regex>
 }
 
-impl PathFilter {
-    fn new() -> PathFilter {
+impl<'a> PathFilter<'a> {
+    fn new() -> PathFilter<'a> {
         PathFilter { patterns: HashMap::new() }
     }
 
-    fn add_filter_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
-        let re = try!(Regex::new(expr.as_slice()));
-        self.patterns.insert(extension, re);
+    fn add_filter_regex(&mut self, name: &'a str, expr: &'a str) -> Result<(), Error> {
+        let re = try!(Regex::new(expr));
+        self.patterns.insert(name, re);
         return Ok(());
     }
 
-    fn add_many_filter_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
+    fn add_many_filter_regex(&mut self, expressions: Vec<(&'a str, &'a str)>) -> Result<(), Error> {
         for (name, expr) in expressions.into_iter() {
             try!(self.add_filter_regex(name, expr));
         }
@@ -40,8 +39,8 @@ fn test_is_match() {
     let paths = ["a.jpeg", "b.png"];
 
     let mut filter = PathFilter::new();
-    let filter_regexs = vec![("jpeg".to_string(), r"(?i)\.jpeg$".to_string()),
-                             ("png".to_string(), r"(?i)\.png$".to_string())];
+    let filter_regexs = vec![("jpeg", r"(?i)\.jpeg$"),
+                             ("png", r"(?i)\.png$")];
     assert!(filter.add_many_filter_regex(filter_regexs).is_ok());
 
     for path in paths.iter() {
@@ -53,7 +52,7 @@ fn test_is_match() {
 fn test_not_match() {
     let paths = ["a.jpeg", "b.png"];
     let mut filter = PathFilter::new();
-    assert!(filter.add_filter_regex("bmp".to_string(), r"(?i)\.bmp$".to_string()).is_ok());
+    assert!(filter.add_filter_regex("bmp", r"(?i)\.bmp$").is_ok());
     for path in paths.iter() {
         assert_eq!(filter.is_match(*path), false);
     }
@@ -62,5 +61,6 @@ fn test_not_match() {
 #[test]
 fn test_bad_regex_error() {
     let mut filter = PathFilter::new();
-    assert!(filter.add_filter_regex("bmp".to_string(), r"($".to_string()).is_err());
+    // causes error: un-closed (
+    assert!(filter.add_filter_regex("bmp", r"($").is_err());
 }
