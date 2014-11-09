@@ -1,9 +1,8 @@
 use std::vec::Vec;
-use std::boxed::Box;
 use std::string::String;
 
 struct PathLoader {
-    paths: Vec<Box<String>>
+    paths: Vec<String>
 }
 
 impl PathLoader {
@@ -11,11 +10,11 @@ impl PathLoader {
         PathLoader { paths: Vec::new() }
     }
 
-    fn add(&mut self, path: Box<String>) {
+    fn add(&mut self, path: String) {
         self.paths.push(path);
     }
 
-    fn all(&self) -> &Vec<Box<String>> {
+    fn all(&self) -> &Vec<String> {
         &self.paths
     }
 }
@@ -23,8 +22,8 @@ impl PathLoader {
 #[test]
 fn test_path_loader_add_path() {
     let mut loader = PathLoader::new();
-    loader.add(box "/images/".to_string());
-    loader.add(box "/path/".to_string());
-    assert!(*loader.all() == vec![box "/images/".to_string(),
-                                  box "/path/".to_string()]);
+    loader.add("/images/".to_string());
+    loader.add("/path/".to_string());
+    assert!(*loader.all() == vec!["/images/".to_string(),
+                                  "/path/".to_string()]);
 }

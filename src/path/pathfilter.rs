@@ -1,10 +1,9 @@
 use regex::Regex;
 use std::collections::HashMap;
-use std::boxed::Box;
 use std::string::String;
 
 struct PathFilter {
-    patterns: HashMap<Box<String>, Box<Regex>>
+    patterns: HashMap<String, Regex>
 }
 
 impl PathFilter {
@@ -12,9 +11,9 @@ impl PathFilter {
         PathFilter { patterns: HashMap::new() }
     }
 
-    fn add_filter_regex(&mut self, extension: Box<String>, expr: &str) {
+    fn add_filter_regex(&mut self, extension: String, expr: &str) {
         let re = match Regex::new(expr) {
-            Ok(re) => box re,
+            Ok(re) => re,
             Err(err) => panic!("{}", err),
         };
         self.patterns.insert(extension, re);
@@ -35,8 +34,8 @@ fn test_is_match() {
     let paths = ["a.jpeg", "b.png"];
 
     let mut filter = PathFilter::new();
-    filter.add_filter_regex(box "jpeg".to_string(), r"(?i)\.jpeg$");
-    filter.add_filter_regex(box "png".to_string(), r"(?i)\.png$");
+    filter.add_filter_regex("jpeg".to_string(), r"(?i)\.jpeg$");
+    filter.add_filter_regex("png".to_string(), r"(?i)\.png$");
 
     for path in paths.iter() {
         assert!(filter.is_match(*path) == true);
