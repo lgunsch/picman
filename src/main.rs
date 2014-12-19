@@ -1,9 +1,6 @@
 extern crate regex;
 
-mod path {
-	pub mod pathloader;
-	pub mod pathfilter;
-}
+pub mod path;
 
 #[cfg(not(test))]
 fn main() {
