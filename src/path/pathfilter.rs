@@ -3,29 +3,29 @@ use std::collections::HashMap;
 use std::string::String;
 use std::vec::Vec;
 
-struct PathFilter {
+pub struct PathFilter {
     patterns: HashMap<String, Regex>
 }
 
 impl PathFilter {
-    fn new() -> PathFilter {
+    pub fn new() -> PathFilter {
         PathFilter { patterns: HashMap::new() }
     }
 
-    fn add_filter_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
+    pub fn add_filter_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
         let re = try!(Regex::new(expr.as_slice()));
         self.patterns.insert(extension, re);
         return Ok(());
     }
 
-    fn add_many_filter_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
+    pub fn add_many_filter_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
         for (name, expr) in expressions.into_iter() {
             try!(self.add_filter_regex(name, expr));
         }
         return Ok(());
     }
 
-    fn is_match(&self, path: &str) -> bool {
+    pub fn is_match(&self, path: &str) -> bool {
         for (_, re) in self.patterns.iter() {
             if re.is_match(path) {
                 return true
