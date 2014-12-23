@@ -1,5 +1,8 @@
 extern crate regex;
 
+#[cfg(test)]
+extern crate hamcrest;
+
 pub mod path;
 
 #[cfg(not(test))]

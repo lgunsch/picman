@@ -1,4 +1,12 @@
 [root]
 name = "picman"
 version = "0.0.1"
+dependencies = [
+ "hamcrest 0.1.0 (git+https://github.com/carllerche/hamcrest-rust.git)",
+]
+
+[[package]]
+name = "hamcrest"
+version = "0.1.0"
+source = "git+https://github.com/carllerche/hamcrest-rust.git#4ae58daf0b3a853ffd3109e63f94d43e8e623769"
 

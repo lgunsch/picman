@@ -2,6 +2,7 @@ use regex::{Regex, Error};
 use std::collections::HashMap;
 use std::string::String;
 use std::vec::Vec;
+use hamcrest::{assert_that, is, equal_to};
 
 pub struct PathFilter {
     patterns: HashMap<String, Regex>
@@ -45,7 +46,7 @@ fn test_is_match() {
     assert!(filter.add_many_filter_regex(filter_regexs).is_ok());
 
     for path in paths.iter() {
-        assert_eq!(filter.is_match(*path), true);
+        assert_that(filter.is_match(*path), is(equal_to(true)));
     }
 }
 
@@ -55,7 +56,7 @@ fn test_not_match() {
     let mut filter = PathFilter::new();
     assert!(filter.add_filter_regex("bmp".to_string(), r"(?i)\.bmp$".to_string()).is_ok());
     for path in paths.iter() {
-        assert_eq!(filter.is_match(*path), false);
+        assert_that(filter.is_match(*path), is(equal_to(false)));
     }
 }
 

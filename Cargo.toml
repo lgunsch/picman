@@ -2,3 +2,6 @@
 name = "picman"
 version = "0.0.1"
 authors = ["Lewis Gunsch <lgunsch@gmail.com>"]
+
+[dependencies.hamcrest]
+git = "https://github.com/carllerche/hamcrest-rust.git"

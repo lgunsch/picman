@@ -1,6 +1,7 @@
+use hamcrest::{assert_that, is, equal_to};
+use path::PathFilter;
 use std::vec::Vec;
 use std::string::String;
-use path::PathFilter;
 
 pub struct PathLoader {
     paths: Vec<String>
@@ -35,8 +36,10 @@ fn test_path_loader_add_path() {
     let mut loader = PathLoader::new();
     loader.add_many(vec!["/images/img.png".to_string(),
                          "/path/text.txt".to_string()]);
-    assert!(*loader.all() == vec!["/images/img.png".to_string(),
-                                  "/path/text.txt".to_string()]);
+
+    let expected = vec!["/images/img.png".to_string(),
+                        "/path/text.txt".to_string()];
+    assert_that(loader.all(), is(equal_to(&expected)));
 }
 
 #[test]
@@ -50,5 +53,7 @@ fn test_apply_filter() {
                          "c.jpeg".to_string(),
                          "d.JPEG".to_string()]);
     loader.apply_filter(&filter);
-    assert!(*loader.all() == vec!["c.jpeg".to_string(), "d.JPEG".to_string()])
+
+    let expected = vec!["c.jpeg".to_string(), "d.JPEG".to_string()];
+    assert_that(loader.all(), is(equal_to(&expected)));
 }
