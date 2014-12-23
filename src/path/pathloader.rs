@@ -1,31 +1,31 @@
 use std::vec::Vec;
 use std::string::String;
-use path::pathfilter::PathFilter;
+use path::PathFilter;
 
-struct PathLoader {
+pub struct PathLoader {
     paths: Vec<String>
 }
 
 impl PathLoader {
-    fn new() -> PathLoader {
+    pub fn new() -> PathLoader {
         PathLoader { paths: Vec::new() }
     }
 
-    fn add(&mut self, path: String) {
+    pub fn add(&mut self, path: String) {
         self.paths.push(path);
     }
 
-    fn add_many(&mut self, paths: Vec<String>) {
+    pub fn add_many(&mut self, paths: Vec<String>) {
         for path in paths.into_iter() {
             self.add(path);
         }
     }
 
-    fn all(&self) -> &Vec<String> {
+    pub fn all(&self) -> &Vec<String> {
         &self.paths
     }
 
-    fn apply_filter(&mut self, filter: &PathFilter) {
+    pub fn apply_filter(&mut self, filter: &PathFilter) {
         self.paths.retain(|ref p| filter.is_match(p.as_slice()))
     }
 }
