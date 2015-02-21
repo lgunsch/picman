@@ -1,3 +1,4 @@
+#![feature(plugin)]
 extern crate regex;
 
 #[cfg(test)]
