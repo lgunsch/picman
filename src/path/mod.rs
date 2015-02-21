@@ -1,4 +1,4 @@
-pub use self::pathfilter::PathFilter;
+pub use self::pathfilter::PathExtensionFilter;
 pub use self::paths::Paths;
 
 mod pathfilter;

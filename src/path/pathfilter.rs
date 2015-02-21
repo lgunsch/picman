@@ -1,67 +1,86 @@
 use regex::{Regex, Error};
 use std::collections::HashMap;
-use std::string::String;
+use std::path::Path;
 use std::vec::Vec;
-use hamcrest::{assert_that, is, equal_to};
 
-pub struct PathFilter {
-    patterns: HashMap<String, Regex>
+pub struct PathExtensionFilter {
+    extension_patterns: HashMap<String, Regex>
 }
 
-impl PathFilter {
-    pub fn new() -> PathFilter {
-        PathFilter { patterns: HashMap::new() }
+impl PathExtensionFilter {
+    pub fn new() -> PathExtensionFilter {
+        PathExtensionFilter { extension_patterns: HashMap::new() }
     }
 
-    pub fn add_filter_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
-        let re = try!(Regex::new(expr.as_slice()));
-        self.patterns.insert(extension, re);
+    pub fn add_extension_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
+        let re = try!(Regex::new(&expr));
+        self.extension_patterns.insert(extension, re);
         return Ok(());
     }
 
-    pub fn add_many_filter_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
+    pub fn add_many_extension_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
         for (name, expr) in expressions.into_iter() {
-            try!(self.add_filter_regex(name, expr));
+            try!(self.add_extension_regex(name, expr));
         }
         return Ok(());
     }
 
-    pub fn is_match(&self, path: &str) -> bool {
-        for (_, re) in self.patterns.iter() {
-            if re.is_match(path) {
+    pub fn is_match(&self, path: &Path) -> bool {
+        for (_, re) in self.extension_patterns.iter() {
+            let ext = match path.extension() {
+                Some(ext) => match ext.to_str() {
+                    Some(s) => s,
+                    None => continue  // not a valid match, its not even unicode
+                },
+                None => ""
+            };
+            println!("extension {:?}", ext);
+            if re.is_match(ext) {
                 return true
+            } else {
+                println!("not match {:?}", ext);
             }
         }
         false
     }
 }
 
-#[test]
-fn test_is_match() {
-    let paths = ["a.jpeg", "b.png"];
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::path::Path;
+    use hamcrest::{assert_that, is, equal_to};
 
-    let mut filter = PathFilter::new();
-    let filter_regexs = vec![("jpeg".to_string(), r"(?i)\.jpeg$".to_string()),
-                             ("png".to_string(), r"(?i)\.png$".to_string())];
-    assert!(filter.add_many_filter_regex(filter_regexs).is_ok());
+    #[test]
+    fn test_is_match() {
+        let paths = ["a.jpeg", "b.jpg", "c.png"];
+        let mut filter = PathExtensionFilter::new();
 
-    for path in paths.iter() {
-        assert_that(filter.is_match(*path), is(equal_to(true)));
+        let filter_regexs = vec![("jpeg".to_string(), r"(?i)jpe?g$".to_string()),
+                                 ("png".to_string(), r"(?i)png$".to_string())];
+        assert!(filter.add_many_extension_regex(filter_regexs).is_ok());
+
+        for p in paths.iter() {
+            let path = Path::new(p);
+            assert_that(filter.is_match(path), is(equal_to(true)));
+        }
     }
-}
 
-#[test]
-fn test_not_match() {
-    let paths = ["a.jpeg", "b.png"];
-    let mut filter = PathFilter::new();
-    assert!(filter.add_filter_regex("bmp".to_string(), r"(?i)\.bmp$".to_string()).is_ok());
-    for path in paths.iter() {
-        assert_that(filter.is_match(*path), is(equal_to(false)));
+    #[test]
+    fn test_not_match() {
+        let paths = ["a.jpeg", "b.jpg", "c.png"];
+        let mut filter = PathExtensionFilter::new();
+
+        assert!(filter.add_extension_regex("bmp".to_string(), r"(?i)\.bmp$".to_string()).is_ok());
+        for p in paths.iter() {
+            let path = Path::new(p);
+            assert_that(filter.is_match(path), is(equal_to(false)));
+        }
     }
-}
 
-#[test]
-fn test_bad_regex_error() {
-    let mut filter = PathFilter::new();
-    assert!(filter.add_filter_regex("bmp".to_string(), r"($".to_string()).is_err());
+    #[test]
+    fn test_bad_regex_error() {
+        let mut filter = PathExtensionFilter::new();
+        assert!(filter.add_extension_regex("bmp".to_string(), r"($".to_string()).is_err());
+    }
 }
