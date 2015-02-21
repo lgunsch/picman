@@ -1,5 +1,5 @@
 pub use self::pathfilter::PathFilter;
-pub use self::pathloader::PathLoader;
+pub use self::paths::Paths;
 
 mod pathfilter;
-mod pathloader;
+mod paths;
