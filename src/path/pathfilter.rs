@@ -34,11 +34,8 @@ impl PathExtensionFilter {
                 },
                 None => ""
             };
-            println!("extension {:?}", ext);
             if re.is_match(ext) {
                 return true
-            } else {
-                println!("not match {:?}", ext);
             }
         }
         false
