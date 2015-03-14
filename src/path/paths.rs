@@ -52,9 +52,7 @@ mod test {
     fn test_apply_filter() {
         let mut loader = Paths::new();
         let mut filter = PathExtensionFilter::new();
-
-        assert!(filter.add_extension_regex(
-            "jpeg".to_string(), r"(?i)jpe?g$".to_string()).is_ok());
+        assert!(filter.add_jpeg().is_ok());
         loader.add_many(vec![PathBuf::new("a.txt"),
                              PathBuf::new("b.png"),
                              PathBuf::new("c.jpeg"),

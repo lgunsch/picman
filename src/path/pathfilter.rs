@@ -12,6 +12,24 @@ impl PathExtensionFilter {
         PathExtensionFilter { extension_patterns: HashMap::new() }
     }
 
+    pub fn add_jpeg(&mut self) -> Result<(), Error> {
+        try!(self.add_extension_regex("jpeg".to_string(),
+                                      r"(?i)jpe?g$".to_string()));
+        return Ok(());
+    }
+
+    pub fn add_png(&mut self) -> Result<(), Error> {
+        try!(self.add_extension_regex("png".to_string(),
+                                      r"(?i)png$".to_string()));
+        return Ok(());
+    }
+
+    pub fn add_bmp(&mut self) -> Result<(), Error> {
+        try!(self.add_extension_regex("bmp".to_string(),
+                                      r"(?i)bmp$".to_string()));
+        return Ok(());
+    }
+
     pub fn add_extension_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
         let re = try!(Regex::new(&expr));
         self.extension_patterns.insert(extension, re);
@@ -48,16 +66,19 @@ mod test {
     use std::path::Path;
     use hamcrest::{assert_that, is, equal_to};
 
+    static PATHS: [&'static str; 7] = ["a.jpeg", "b.jpg", "c.JpEG",
+                                       "d.png", "e.PnG", "f.bmp",
+                                       "f.BmP"];
+
     #[test]
     fn test_is_match() {
-        let paths = ["a.jpeg", "b.jpg", "c.png"];
         let mut filter = PathExtensionFilter::new();
 
-        let filter_regexs = vec![("jpeg".to_string(), r"(?i)jpe?g$".to_string()),
-                                 ("png".to_string(), r"(?i)png$".to_string())];
-        assert!(filter.add_many_extension_regex(filter_regexs).is_ok());
+        assert!(filter.add_jpeg().is_ok());
+        assert!(filter.add_png().is_ok());
+        assert!(filter.add_bmp().is_ok());
 
-        for p in paths.iter() {
+        for p in PATHS.iter() {
             let path = Path::new(p);
             assert_that(filter.is_match(path), is(equal_to(true)));
         }
@@ -65,11 +86,10 @@ mod test {
 
     #[test]
     fn test_not_match() {
-        let paths = ["a.jpeg", "b.jpg", "c.png"];
         let mut filter = PathExtensionFilter::new();
 
-        assert!(filter.add_extension_regex("bmp".to_string(), r"(?i)\.bmp$".to_string()).is_ok());
-        for p in paths.iter() {
+        assert!(filter.add_extension_regex("txt".to_string(), r"^(?i)txt$".to_string()).is_ok());
+        for p in PATHS.iter() {
             let path = Path::new(p);
             assert_that(filter.is_match(path), is(equal_to(false)));
         }
