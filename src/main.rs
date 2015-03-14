@@ -1,4 +1,3 @@
-#![feature(os)]
 #![feature(path)]
 #![feature(plugin)]
 
