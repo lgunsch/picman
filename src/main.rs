@@ -1,4 +1,3 @@
-#![feature(path)]
 #![feature(plugin)]
 
 extern crate regex;

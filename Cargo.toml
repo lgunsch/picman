@@ -7,4 +7,4 @@ authors = ["Lewis Gunsch <lgunsch@gmail.com>"]
 regex = "~0"
 
 [dependencies.hamcrest]
-git = "https://github.com/lgunsch/hamcrest-rust.git"
+git = "https://github.com/carllerche/hamcrest-rust.git"
