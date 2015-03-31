@@ -28,6 +28,10 @@ impl Paths {
     pub fn apply_filter(&mut self, filter: &PathExtensionFilter) {
         self.paths.retain(|p| filter.is_match(&p))
     }
+
+    pub fn count(&self) -> usize {
+        self.paths.len()
+    }
 }
 
 #[cfg(test)]
@@ -37,29 +41,39 @@ mod test {
     use path::PathExtensionFilter;
     use hamcrest::{assert_that, is, equal_to};
 
+    fn create() -> Paths {
+        let mut loader = Paths::new();
+        loader.add_many(vec![PathBuf::from("a.txt"),
+                             PathBuf::from("b.png"),
+                             PathBuf::from("c.jpeg"),
+                             PathBuf::from("d.JPEG")]);
+        return loader;
+    }
+
     #[test]
     fn test_path_loader_add_many() {
-        let mut loader = Paths::new();
-        loader.add_many(vec![PathBuf::from("/images/img.png"),
-                             PathBuf::from("/path/text.txt")]);
-
-        let expected = vec![PathBuf::from("/images/img.png"),
-                            PathBuf::from("/path/text.txt")];
+        let loader = create();
+        let expected = vec![PathBuf::from("a.txt"),
+                             PathBuf::from("b.png"),
+                             PathBuf::from("c.jpeg"),
+                             PathBuf::from("d.JPEG")];
         assert_that(loader.all(), is(equal_to(&expected)));
     }
 
     #[test]
     fn test_apply_filter() {
-        let mut loader = Paths::new();
+        let mut loader = create();
         let mut filter = PathExtensionFilter::new();
         assert!(filter.add_jpeg().is_ok());
-        loader.add_many(vec![PathBuf::from("a.txt"),
-                             PathBuf::from("b.png"),
-                             PathBuf::from("c.jpeg"),
-                             PathBuf::from("d.JPEG")]);
         loader.apply_filter(&filter);
 
         let expected = vec![PathBuf::from("c.jpeg"), PathBuf::from("d.JPEG")];
         assert_that(loader.all(), is(equal_to(&expected)));
+    }
+
+    #[test]
+    fn test_count() {
+        let loader = create();
+        assert_that(loader.count(), is(equal_to(4)));
     }
 }
