@@ -38,13 +38,13 @@ mod test {
     use hamcrest::{assert_that, is, equal_to};
 
     #[test]
-    fn test_path_loader_add_path() {
+    fn test_path_loader_add_many() {
         let mut loader = Paths::new();
-        loader.add_many(vec![PathBuf::new("/images/img.png"),
-                             PathBuf::new("/path/text.txt")]);
+        loader.add_many(vec![PathBuf::from("/images/img.png"),
+                             PathBuf::from("/path/text.txt")]);
 
-        let expected = vec![PathBuf::new("/images/img.png"),
-                            PathBuf::new("/path/text.txt")];
+        let expected = vec![PathBuf::from("/images/img.png"),
+                            PathBuf::from("/path/text.txt")];
         assert_that(loader.all(), is(equal_to(&expected)));
     }
 
@@ -53,13 +53,13 @@ mod test {
         let mut loader = Paths::new();
         let mut filter = PathExtensionFilter::new();
         assert!(filter.add_jpeg().is_ok());
-        loader.add_many(vec![PathBuf::new("a.txt"),
-                             PathBuf::new("b.png"),
-                             PathBuf::new("c.jpeg"),
-                             PathBuf::new("d.JPEG")]);
+        loader.add_many(vec![PathBuf::from("a.txt"),
+                             PathBuf::from("b.png"),
+                             PathBuf::from("c.jpeg"),
+                             PathBuf::from("d.JPEG")]);
         loader.apply_filter(&filter);
 
-        let expected = vec![PathBuf::new("c.jpeg"), PathBuf::new("d.JPEG")];
+        let expected = vec![PathBuf::from("c.jpeg"), PathBuf::from("d.JPEG")];
         assert_that(loader.all(), is(equal_to(&expected)));
     }
 }

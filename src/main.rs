@@ -1,3 +1,4 @@
+#![feature(convert)]
 #![feature(plugin)]
 
 extern crate regex;

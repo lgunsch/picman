@@ -3,16 +3,16 @@ name = "picman"
 version = "0.0.1"
 dependencies = [
  "hamcrest 0.1.0 (git+https://github.com/carllerche/hamcrest-rust.git)",
- "regex 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "hamcrest"
 version = "0.1.0"
-source = "git+https://github.com/carllerche/hamcrest-rust.git#2dbf32e738935f7ebb5223b31b8fc1fe6327adf8"
+source = "git+https://github.com/carllerche/hamcrest-rust.git#80e7a1cbd6db9ec20bb1d61920e55a1af91a9eb2"
 
 [[package]]
 name = "regex"
-version = "0.1.23"
+version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
