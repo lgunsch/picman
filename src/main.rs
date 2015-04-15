@@ -15,21 +15,30 @@ use path::Paths;
 #[allow(dead_code)]  // TODO: Remove once a patch for #12327 lands
 fn main() {
     let mut paths = Paths::new();
-    let path_iter = match walk_dir(PathBuf::from("/var/tmp")) {
+
+    // Just 2 paths for testing...
+    load_dir(PathBuf::from("/var/tmp"), &mut paths);
+    load_dir(PathBuf::from("/root/"), &mut paths);
+
+   println!("Scanned in {} paths...", paths.count());
+}
+
+fn load_dir(path: PathBuf, paths: &mut Paths) {
+    let dir_err_msg = format!("cannot read directory `{}`",
+                              path.as_path().to_string_lossy());
+    let path_iter = match walk_dir(path) {
         Ok(t) => t,
         Err(e) => {
-            perror("cannot read directory", e);
+            perror(&dir_err_msg, e);
             return;
         }
     };
     for dir_entry in path_iter {
         match dir_entry {
-            Ok(de) => paths.add(de.path()),
+            Ok(entry) => paths.add(entry.path()),
             Err(why) => pwarning("cannot add path", why),
         }
     }
-
-   println!("Scanned in {} paths...", paths.count());
 }
 
 fn perror<T: Error>(msg: &str, err: T) {
@@ -37,5 +46,5 @@ fn perror<T: Error>(msg: &str, err: T) {
 }
 
 fn pwarning<T: Error>(msg: &str, err: T) {
-    println!("WARNING: {}: {}", msg, err);
+    println!("Warning: {}: {}", msg, err);
 }
