@@ -1,4 +1,4 @@
-#![feature(convert)]
+#![feature(fs_walk)]
 #![feature(plugin)]
 
 extern crate regex;
@@ -7,12 +7,12 @@ extern crate regex;
 
 pub mod path;
 
-#[cfg(not(test))] use std::error::Error;
-#[cfg(not(test))] use std::fs::walk_dir;
-#[cfg(not(test))] use std::path::PathBuf;
-#[cfg(not(test))] use path::Paths;
+use std::error::Error;
+use std::fs::walk_dir;
+use std::path::PathBuf;
+use path::Paths;
 
-#[cfg(not(test))]
+#[allow(dead_code)]  // TODO: Remove once a patch for #12327 lands
 fn main() {
     let mut paths = Paths::new();
     let path_iter = match walk_dir(PathBuf::from("/var/tmp")) {
@@ -25,19 +25,17 @@ fn main() {
     for dir_entry in path_iter {
         match dir_entry {
             Ok(de) => paths.add(de.path()),
-            Err(e) => pwarning("cannot add path", e),
+            Err(why) => pwarning("cannot add path", why),
         }
     }
 
    println!("Scanned in {} paths...", paths.count());
 }
 
-#[cfg(not(test))]
 fn perror<T: Error>(msg: &str, err: T) {
     println!("ERROR: {}: {}", msg, err);
 }
 
-#[cfg(not(test))]
 fn pwarning<T: Error>(msg: &str, err: T) {
     println!("WARNING: {}: {}", msg, err);
 }
