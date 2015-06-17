@@ -1,16 +1,14 @@
-#![feature(fs_walk)]
-#![feature(plugin)]
-
 extern crate regex;
+extern crate walker;
 
 #[cfg(test)] extern crate hamcrest;
 
 pub mod path;
 
 use std::error::Error;
-use std::fs::walk_dir;
 use std::path::PathBuf;
 use path::Paths;
+use walker::Walker;
 
 #[allow(dead_code)]  // TODO: Remove once a patch for #12327 lands
 fn main() {
@@ -26,7 +24,7 @@ fn main() {
 fn load_dir(path: PathBuf, paths: &mut Paths) {
     let dir_err_msg = format!("cannot read directory `{}`",
                               path.as_path().to_string_lossy());
-    let path_iter = match walk_dir(path) {
+    let path_iter = match Walker::new(path.as_path()) {
         Ok(t) => t,
         Err(e) => {
             perror(&dir_err_msg, e);

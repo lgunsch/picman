@@ -5,6 +5,7 @@ authors = ["Lewis Gunsch <lgunsch@gmail.com>"]
 
 [dependencies]
 regex = "~0"
+walker = "^1.0.0"
 
 [dependencies.hamcrest]
 git = "https://github.com/carllerche/hamcrest-rust.git"
