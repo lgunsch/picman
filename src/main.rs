@@ -1,5 +1,9 @@
+extern crate docopt;
 extern crate regex;
 extern crate walker;
+
+// FIXME(#19470): Remove once rust bug is fixed.
+extern crate rustc_serialize;
 
 #[cfg(test)] extern crate hamcrest;
 
@@ -7,18 +11,45 @@ pub mod path;
 
 use std::error::Error;
 use std::path::PathBuf;
-use path::Paths;
+
+use docopt::Docopt;
 use walker::Walker;
+
+use path::Paths;
+
+static VERSION: &'static str = "v0.1.0-dev";
+
+static USAGE: &'static str = "
+Usage: picman <source> <dest>
+       picman <source>... <dest>
+       picman (--help | --version)
+
+Options:
+    -h, --help  display this help text and exit
+";
+
+#[derive(RustcDecodable)]
+struct Args {
+    arg_source: Vec<String>,
+    arg_dest: String,
+}
 
 #[cfg_attr(test, allow(dead_code))]  // TODO: Remove once a patch for #12327 lands
 fn main() {
     let mut paths = Paths::new();
 
-    // Just 2 paths for testing...
-    load_dir(PathBuf::from("/var/tmp"), &mut paths);
-    load_dir(PathBuf::from("/root/"), &mut paths);
+    let args: Args = Docopt::new(USAGE)
+                             .unwrap_or_else(|e| e.exit())
+                             .help(true)
+                             .version(Some(VERSION.to_string()))
+                             .decode()
+                             .unwrap_or_else(|e| e.exit());
 
-   println!("Scanned in {} paths...", paths.count());
+    for path in args.arg_source.into_iter() {
+        load_dir(PathBuf::from(path), &mut paths);
+    }
+
+    println!("Scanned in {} paths...", paths.count());
 }
 
 fn load_dir(path: PathBuf, paths: &mut Paths) {
