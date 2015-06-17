@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use path::Paths;
 use walker::Walker;
 
-#[allow(dead_code)]  // TODO: Remove once a patch for #12327 lands
+#[cfg_attr(test, allow(dead_code))]  // TODO: Remove once a patch for #12327 lands
 fn main() {
     let mut paths = Paths::new();
 
