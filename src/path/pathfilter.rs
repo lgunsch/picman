@@ -30,15 +30,15 @@ impl PathExtensionFilter {
         return Ok(());
     }
 
-    pub fn add_extension_regex(&mut self, extension: String, expr: String) -> Result<(), Error> {
-        let re = try!(Regex::new(&expr));
-        self.extension_patterns.insert(extension, re);
+    pub fn add_extension_regex<T: Into<String>>(&mut self, extension: T, expr: T) -> Result<(), Error> {
+        let re = try!(Regex::new(&expr.into()));
+        self.extension_patterns.insert(extension.into(), re);
         return Ok(());
     }
 
-    pub fn add_many_extension_regex(&mut self, expressions: Vec<(String, String)>) -> Result<(), Error> {
+    pub fn add_many_extension_regex<T: Into<String>>(&mut self, expressions: Vec<(T, T)>) -> Result<(), Error> {
         for (name, expr) in expressions.into_iter() {
-            try!(self.add_extension_regex(name, expr));
+            try!(self.add_extension_regex(name.into(), expr.into()));
         }
         return Ok(());
     }
@@ -99,5 +99,13 @@ mod test {
     fn test_bad_regex_error() {
         let mut filter = PathExtensionFilter::new();
         assert!(filter.add_extension_regex("bmp".to_string(), r"($".to_string()).is_err());
+    }
+
+    #[test]
+    fn test_slices_accepted() {
+        let mut filter = PathExtensionFilter::new();
+        assert!(filter.add_extension_regex("bmp", "bmp").is_ok());
+        assert!(filter.add_many_extension_regex(vec![("bmp", "bmp"),
+                                                     ("jpg", "jpg")]).is_ok());
     }
 }
