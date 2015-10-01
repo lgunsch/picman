@@ -1,3 +1,4 @@
+extern crate crypto;
 extern crate docopt;
 extern crate regex;
 extern crate walker;
@@ -8,6 +9,7 @@ extern crate rustc_serialize;
 #[cfg(test)] extern crate hamcrest;
 
 pub mod path;
+pub mod entry;
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -52,6 +54,7 @@ fn main() {
     println!("Scanned in {} paths...", paths.count());
 }
 
+/// Populate `paths` given a root directory `path`
 fn load_dir(path: PathBuf, paths: &mut Paths) {
     let dir_err_msg = format!("cannot read directory `{}`",
                               path.as_path().to_string_lossy());
