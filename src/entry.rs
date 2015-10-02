@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::Read;
 use std::path::PathBuf;
 use std::vec::Vec;
 
@@ -17,22 +17,21 @@ impl Entry {
     }
 }
 
-pub type BufReadFactory = Fn(PathBuf) -> Box<BufRead>;
+pub type CreateReaderFn = Fn(PathBuf) -> Box<Read>;
 
 /// Creates Entry instances from a path, and populates them
 /// with an initial MD5 hash.
 pub struct EntryFactory<'a> {
     initial_digest: Box<Digest + 'a>,
-    bufread_factory: Box<BufReadFactory>,
+    new_reader: Box<CreateReaderFn>,
 }
 
 impl<'a> EntryFactory<'a> {
-
     pub fn new(initial: Box<Digest + 'a>,
-                  bufread_factory: Box<BufReadFactory>) -> EntryFactory<'a> {
+               new_reader: Box<CreateReaderFn>) -> EntryFactory<'a> {
         EntryFactory {
             initial_digest: initial,
-            bufread_factory: bufread_factory,
+            new_reader: new_reader,
         }
     }
 
@@ -56,13 +55,13 @@ mod test {
 
     #[test]
     fn test_entry_factory_creates_entry() {
-        let bufread_factory = |path: PathBuf| {
+        let new_reader = |path: PathBuf| {
             let mut cursor = Cursor::new(Vec::new());
             let data: [u8; 4] = [1, 2, 3, 4];
             assert_that(cursor.write(&data).unwrap(), is(equal_to(4)));
             cursor.set_position(0);
-            Box::new(BufReader::new(cursor)) as Box<BufRead + 'static>
+            Box::new(cursor) as Box<Read>
         };
-        let factory = EntryFactory::new(Box::new(Md5::new()), Box::new(bufread_factory));
+        let factory = EntryFactory::new(Box::new(Md5::new()), Box::new(new_reader));
     }
 }
