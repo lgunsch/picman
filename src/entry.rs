@@ -35,8 +35,7 @@ pub struct EntryFactory<D, R> where D: Digest, R: ReadOpener {
 
 impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     /// Creates an `EntryFactory` using the initial `Digest`, and `ReadOpener`.
-    pub fn new(digest: D, read_opener: R) -> EntryFactory<D, R>
-        where D: Digest, R: ReadOpener {
+    pub fn new(digest: D, read_opener: R) -> EntryFactory<D, R> {
         EntryFactory {
             initial_digest: digest,
             read_opener: read_opener,
