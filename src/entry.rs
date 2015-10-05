@@ -4,6 +4,7 @@ use std::vec::Vec;
 
 use crypto::digest::Digest;
 
+
 /// Represents a single file, with its computed hash digest values
 pub struct Entry {
     pub path: PathBuf,
@@ -11,31 +12,38 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// Construct a new Entry with the given path.
+    /// Creates a new `Entry` with the given path.
     pub fn new(path: PathBuf) -> Entry {
         Entry {path: path, hashes: Vec::new()}
     }
 }
 
-pub type CreateReaderFn = Fn(PathBuf) -> Box<Read>;
 
-/// Creates Entry instances from a path, and populates them
-/// with an initial MD5 hash.
-pub struct EntryFactory<'a> {
-    initial_digest: Box<Digest + 'a>,
-    new_reader: Box<CreateReaderFn>,
+pub trait ReadOpener {
+    type Readable: Read;
+    /// Creates a new `Readable` type, given a `PathBuf`.
+    fn get_reader(PathBuf) -> Self::Readable;
 }
 
-impl<'a> EntryFactory<'a> {
-    pub fn new(initial: Box<Digest + 'a>,
-               new_reader: Box<CreateReaderFn>) -> EntryFactory<'a> {
+
+/// Creates `Entry` instances from a `PathBuf`, and populates them
+/// with an initial `Digest` hash.
+pub struct EntryFactory<D, R> where D: Digest, R: ReadOpener {
+    initial_digest: D,
+    read_opener: R,
+}
+
+impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
+    /// Creates an `EntryFactory` using the initial `Digest`, and `ReadOpener`.
+    pub fn new(digest: D, read_opener: R) -> EntryFactory<D, R>
+        where D: Digest, R: ReadOpener {
         EntryFactory {
-            initial_digest: initial,
-            new_reader: new_reader,
+            initial_digest: digest,
+            read_opener: read_opener,
         }
     }
 
-    /// Construct a new instance of Entry, also computing its first digest.
+    /// Creates an `Entry`, also computing its first digest.
     pub fn create(self, path: PathBuf) -> Entry {
         Entry {path: PathBuf::new(), hashes: Vec::new()}
     }
@@ -53,15 +61,22 @@ mod test {
     use crypto::md5::Md5;
     use crypto::digest::Digest;
 
-    #[test]
-    fn test_entry_factory_creates_entry() {
-        let new_reader = |path: PathBuf| {
+    struct CursorFactory;
+
+    impl ReadOpener for CursorFactory {
+        type Readable = Cursor<Vec<u8>>;
+
+        fn get_reader(path: PathBuf) -> Cursor<Vec<u8>> {
             let mut cursor = Cursor::new(Vec::new());
             let data: [u8; 4] = [1, 2, 3, 4];
             assert_that(cursor.write(&data).unwrap(), is(equal_to(4)));
             cursor.set_position(0);
-            Box::new(cursor) as Box<Read>
-        };
-        let factory = EntryFactory::new(Box::new(Md5::new()), Box::new(new_reader));
+            cursor
+        }
+    }
+
+    #[test]
+    fn test_entry_factory_creates_entry() {
+        let factory = EntryFactory::new(Md5::new(), CursorFactory);
     }
 }
