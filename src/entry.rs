@@ -1,4 +1,5 @@
-use std::io::{BufRead, BufReader, Read, Error};
+use std::io::{BufRead, BufReader, Read, Error, empty};
+use std::fs::File;
 use std::path::PathBuf;
 use std::vec::Vec;
 
@@ -23,7 +24,7 @@ impl Entry {
 pub trait ReadOpener {
     type Readable: Read;
     /// Creates a new `Readable` type, given a `PathBuf`.
-    fn get_reader(&mut self, &PathBuf) -> Self::Readable;
+    fn get_reader(&mut self, &PathBuf) -> Result<Self::Readable, Error>;
 }
 
 
@@ -45,7 +46,9 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
 
     /// Creates an `Entry`, also computing its first digest.
     pub fn create(&mut self, path: PathBuf) -> Result<Entry, Error>  {
-        let mut reader = BufReader::new(self.read_opener.get_reader(&path));
+        let mut reader = BufReader::new(
+            try!(self.read_opener.get_reader(&path))
+        );
 
         loop {
             let nread = {
@@ -72,7 +75,7 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
 mod test {
     use super::*;
     use hamcrest::{assert_that, is, equal_to};
-    use std::io::{Cursor, Read, Write, BufRead, BufReader};
+    use std::io::{Cursor, Read, Write, BufRead, BufReader, Error};
     use std::path::PathBuf;
     use std::vec::Vec;
 
@@ -84,14 +87,14 @@ mod test {
     impl ReadOpener for CursorFactory {
         type Readable = Cursor<Vec<u8>>;
 
-        fn get_reader(&mut self, path: &PathBuf) -> Cursor<Vec<u8>> {
+        fn get_reader(&mut self, path: &PathBuf) -> Result<Cursor<Vec<u8>>, Error> {
             let mut cursor = Cursor::new(Vec::new());
             // use path &str as file contents for testing
             let data: &[u8] = path.as_path().to_str().unwrap().as_bytes();
             assert_that(cursor.write(&data).unwrap(),
                         is(equal_to(data.len())));
             cursor.set_position(0);
-            cursor
+            Ok(cursor)
         }
     }
 
@@ -121,7 +124,7 @@ mod test {
 
     fn create_expected_entry(path: &PathBuf) -> Entry {
         let mut buf = Vec::new();
-        let mut reader = CursorFactory.get_reader(&path);
+        let mut reader = CursorFactory.get_reader(&path).unwrap();
         assert!(reader.read_to_end(&mut buf).is_ok());
 
         let mut md5 = Md5::new();
