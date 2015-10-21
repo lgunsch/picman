@@ -8,6 +8,7 @@ extern crate walker;
 extern crate rustc_serialize;
 
 #[cfg(test)] extern crate hamcrest;
+#[cfg(test)] pub mod tests;  // integration tests
 
 pub mod path;
 pub mod entry;
