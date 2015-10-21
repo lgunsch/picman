@@ -1,5 +1,6 @@
 extern crate crypto;
 extern crate docopt;
+#[macro_use] extern crate log;
 extern crate regex;
 extern crate walker;
 
@@ -10,6 +11,7 @@ extern crate rustc_serialize;
 
 pub mod path;
 pub mod entry;
+pub mod logger;
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -17,6 +19,7 @@ use std::path::PathBuf;
 use docopt::Docopt;
 use walker::Walker;
 
+use logger::Logger;
 use path::Paths;
 
 static VERSION: &'static str = "v0.1.0-dev";
@@ -47,11 +50,13 @@ fn main() {
                              .decode()
                              .unwrap_or_else(|e| e.exit());
 
+    init_logging();
+
     for path in args.arg_source.into_iter() {
         load_dir(PathBuf::from(path), &mut paths);
     }
 
-    println!("Scanned in {} paths...", paths.count());
+    info!("Scanned in {} paths...", paths.count());
 }
 
 /// Populate `paths` given a root directory `path`
@@ -61,22 +66,21 @@ fn load_dir(path: PathBuf, paths: &mut Paths) {
     let path_iter = match Walker::new(path.as_path()) {
         Ok(t) => t,
         Err(e) => {
-            perror(&dir_err_msg, e);
+            error!("{}: {}", &dir_err_msg, e);
             return;
         }
     };
     for dir_entry in path_iter {
         match dir_entry {
             Ok(entry) => paths.add(entry.path()),
-            Err(why) => pwarning("cannot add path", why),
+            Err(why) => warn!("cannot add path: {}", why),
         }
     }
 }
 
-fn perror<T: Error>(msg: &str, err: T) {
-    println!("ERROR: {}: {}", msg, err);
-}
-
-fn pwarning<T: Error>(msg: &str, err: T) {
-    println!("Warning: {}: {}", msg, err);
+fn init_logging() {
+    log::set_logger(|max_level| {
+        max_level.set(log::LogLevelFilter::Debug);
+        Box::new(Logger::new(max_level))
+    });
 }

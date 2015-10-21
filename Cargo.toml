@@ -5,6 +5,7 @@ authors = ["Lewis Gunsch <lgunsch@gmail.com>"]
 
 [dependencies]
 docopt = "~0"
+log = "~0"
 regex = "~0"
 rust-crypto = "0.2.31"
 rustc-serialize = "~0"
