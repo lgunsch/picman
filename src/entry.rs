@@ -71,6 +71,23 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
 }
 
 
+pub struct FileReadOpener;
+
+impl FileReadOpener {
+    pub fn new() -> FileReadOpener {
+        FileReadOpener
+    }
+}
+
+impl ReadOpener for FileReadOpener {
+    type Readable = File;
+
+    fn get_reader(&mut self, path: &PathBuf) -> Result<File, Error> {
+        File::open(&path)
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::*;
