@@ -1,4 +1,4 @@
-use log::{Log, LogRecord, LogLevel, LogMetadata, MaxLogLevelFilter};
+use log::{Log, LogRecord, LogMetadata, MaxLogLevelFilter};
 
 pub struct Logger {
     max_level_filter: MaxLogLevelFilter,

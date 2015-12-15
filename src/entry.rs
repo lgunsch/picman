@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader, Read, Error, empty};
+use std::io::{BufRead, BufReader, Read, Error};
 use std::fs::File;
 use std::path::PathBuf;
 use std::vec::Vec;
@@ -92,7 +92,7 @@ impl ReadOpener for FileReadOpener {
 mod test {
     use super::*;
     use hamcrest::{assert_that, is, equal_to};
-    use std::io::{Cursor, Read, Write, BufRead, BufReader, Error};
+    use std::io::{Cursor, Read, Write, Error};
     use std::path::PathBuf;
     use std::vec::Vec;
 

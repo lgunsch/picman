@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crypto::md5::Md5;
 use hamcrest::{assert_that, is, equal_to};
 
-use entry::{Entry, EntryFactory, FileReadOpener, ReadOpener};
+use entry::{Entry, EntryFactory, FileReadOpener};
 
 #[test]
 fn entry_factory_creates_entry() {
