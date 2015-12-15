@@ -44,6 +44,8 @@ struct Args {
 fn main() {
     let mut paths = Paths::new();
 
+    // Error.exit() used below prints out an appropriate usage message,
+    // which is why we don't panic instead.
     let args: Args = Docopt::new(USAGE)
                              .unwrap_or_else(|e| e.exit())
                              .help(true)
@@ -57,7 +59,8 @@ fn main() {
         load_dir(PathBuf::from(path), &mut paths);
     }
 
-    info!("Scanned in {} paths...", paths.count());
+    info!("scanned in {} paths", paths.count());
+    info!("destination is {}", args.arg_dest);
 }
 
 /// Populate `paths` given a root directory `path`
