@@ -53,7 +53,7 @@ fn main() {
                              .decode()
                              .unwrap_or_else(|e| e.exit());
 
-    init_logging();
+    set_global_logger();
 
     for path in args.arg_source.into_iter() {
         load_dir(PathBuf::from(path), &mut paths);
@@ -82,7 +82,7 @@ fn load_dir(path: PathBuf, paths: &mut Paths) {
     }
 }
 
-fn init_logging() {
+fn set_global_logger() {
     log::set_logger(|max_level| {
         max_level.set(log::LogLevelFilter::Debug);
         Box::new(Logger::new(max_level))
