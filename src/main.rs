@@ -83,5 +83,5 @@ fn init_logging() {
     log::set_logger(|max_level| {
         max_level.set(log::LogLevelFilter::Debug);
         Box::new(Logger::new(max_level))
-    });
+    }).expect("could not create logger")
 }
