@@ -1,4 +1,6 @@
+extern crate crypto;
 extern crate docopt;
+#[macro_use] extern crate log;
 extern crate regex;
 extern crate walker;
 
@@ -6,8 +8,11 @@ extern crate walker;
 extern crate rustc_serialize;
 
 #[cfg(test)] extern crate hamcrest;
+#[cfg(test)] pub mod tests;  // integration tests
 
 pub mod path;
+pub mod entry;
+pub mod logger;
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -15,6 +20,7 @@ use std::path::PathBuf;
 use docopt::Docopt;
 use walker::Walker;
 
+use logger::Logger;
 use path::Paths;
 
 static VERSION: &'static str = "v0.1.0-dev";
@@ -38,6 +44,8 @@ struct Args {
 fn main() {
     let mut paths = Paths::new();
 
+    // Error.exit() used below prints out an appropriate usage message,
+    // which is why we don't panic instead.
     let args: Args = Docopt::new(USAGE)
                              .unwrap_or_else(|e| e.exit())
                              .help(true)
@@ -45,35 +53,38 @@ fn main() {
                              .decode()
                              .unwrap_or_else(|e| e.exit());
 
+    set_global_logger();
+
     for path in args.arg_source.into_iter() {
         load_dir(PathBuf::from(path), &mut paths);
     }
 
-    println!("Scanned in {} paths...", paths.count());
+    info!("scanned in {} paths", paths.count());
+    info!("destination is {}", args.arg_dest);
 }
 
+/// Populate `paths` given a root directory `path`
 fn load_dir(path: PathBuf, paths: &mut Paths) {
     let dir_err_msg = format!("cannot read directory `{}`",
                               path.as_path().to_string_lossy());
     let path_iter = match Walker::new(path.as_path()) {
         Ok(t) => t,
         Err(e) => {
-            perror(&dir_err_msg, e);
+            error!("{}: {}", &dir_err_msg, e);
             return;
         }
     };
     for dir_entry in path_iter {
         match dir_entry {
             Ok(entry) => paths.add(entry.path()),
-            Err(why) => pwarning("cannot add path", why),
+            Err(why) => warn!("cannot add path: {}", why),
         }
     }
 }
 
-fn perror<T: Error>(msg: &str, err: T) {
-    println!("ERROR: {}: {}", msg, err);
-}
-
-fn pwarning<T: Error>(msg: &str, err: T) {
-    println!("Warning: {}: {}", msg, err);
+fn set_global_logger() {
+    log::set_logger(|max_level| {
+        max_level.set(log::LogLevelFilter::Debug);
+        Box::new(Logger::new(max_level))
+    }).expect("could not create logger")
 }
