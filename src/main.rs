@@ -14,7 +14,6 @@ pub mod path;
 pub mod entry;
 pub mod logger;
 
-use std::error::Error;
 use std::path::PathBuf;
 
 use docopt::Docopt;
