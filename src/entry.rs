@@ -1,6 +1,10 @@
-use std::io::{BufRead, BufReader, Read, Error};
+use std::error::Error;
+use std::io::{BufRead, BufReader, Read};
+use std::io::Error as IOError;
+use std::fmt;
 use std::fs::File;
 use std::path::PathBuf;
+use std::sync::mpsc::{Sender, SendError};
 use std::vec::Vec;
 
 use crypto::digest::Digest;
@@ -24,7 +28,24 @@ impl Entry {
 pub trait ReadOpener {
     type Readable: Read;
     /// Creates a new `Readable` type, given a `PathBuf`.
-    fn get_reader(&mut self, &PathBuf) -> Result<Self::Readable, Error>;
+    fn get_reader(&mut self, &PathBuf) -> Result<Self::Readable, IOError>;
+}
+
+#[derive(Debug)]
+pub struct EntrySendError {
+	pub failed: Vec<Result<Entry, IOError>>,
+}
+
+impl fmt::Display for EntrySendError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Hello from EntrySendError!")
+	}
+}
+
+impl Error for EntrySendError {
+	fn description(&self) -> &str {
+		"string?"
+	}
 }
 
 
@@ -45,7 +66,7 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     }
 
     /// Creates an `Entry`, also computing its first digest.
-    pub fn create(&mut self, path: PathBuf) -> Result<Entry, Error>  {
+    pub fn create(&mut self, path: PathBuf) -> Result<Entry, IOError>  {
         let mut reader = BufReader::new(
             try!(self.read_opener.get_reader(&path))
         );
@@ -68,8 +89,28 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
 
         Ok(Entry {path: path, hashes: hashes})
     }
-}
 
+    /// Creates and sends `Entry` instances on a
+    /// `Sender<Result<Entry, IOError>>` channel.
+    pub fn send_many(&mut self, paths: Vec<PathBuf>, sender: Sender<Result<Entry, IOError>>)
+                     -> Result<(), EntrySendError> {  // FIXME: should become a custom error
+     	let mut unsendable = Vec::new();
+        for path in paths.into_iter() {
+            // TODO:  deal with the possible error here!
+
+            match sender.send(self.create(path)) {
+            	Ok(_) => {},
+            	Err(SendError(failed_path)) => unsendable.push(failed_path),
+            }
+        }
+
+        if unsendable.len() > 0 {
+            Err(EntrySendError{ failed: unsendable })
+        } else {
+            Ok(())
+        }
+    }
+}
 
 pub struct FileReadOpener;
 
@@ -82,7 +123,7 @@ impl FileReadOpener {
 impl ReadOpener for FileReadOpener {
     type Readable = File;
 
-    fn get_reader(&mut self, path: &PathBuf) -> Result<File, Error> {
+    fn get_reader(&mut self, path: &PathBuf) -> Result<File, IOError> {
         File::open(&path)
     }
 }
@@ -92,8 +133,10 @@ impl ReadOpener for FileReadOpener {
 mod test {
     use super::*;
     use hamcrest::{assert_that, is, equal_to};
-    use std::io::{Cursor, Read, Write, Error};
+    use std::io::{Cursor, Read, Write};
+    use std::io::Error as IOError;
     use std::path::PathBuf;
+    use std::sync::mpsc::channel;
     use std::vec::Vec;
 
     use crypto::md5::Md5;
@@ -104,7 +147,7 @@ mod test {
     impl ReadOpener for CursorFactory {
         type Readable = Cursor<Vec<u8>>;
 
-        fn get_reader(&mut self, path: &PathBuf) -> Result<Cursor<Vec<u8>>, Error> {
+        fn get_reader(&mut self, path: &PathBuf) -> Result<Cursor<Vec<u8>>, IOError> {
             let mut cursor = Cursor::new(Vec::new());
             // use path &str as file contents for testing
             let data: &[u8] = path.as_path().to_str().unwrap().as_bytes();
@@ -137,6 +180,53 @@ mod test {
         // This second create will fail if initial_digest is not reset.
         let entry = factory.create(path).unwrap();
         assert_that(entry, is(equal_to(expected)));
+    }
+
+    #[test]
+    fn test_entry_factory_send_many() {
+        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
+
+        let paths = vec![PathBuf::from("a.jpg"),
+                         PathBuf::from("b.jpg"),
+                         PathBuf::from("c.jpg"),
+                         PathBuf::from("d.jpg")];
+        let (send, recv) = channel::<Result<Entry, IOError>>();
+
+        let expected: Vec<Entry> = paths.iter()
+                                        .map(|ref x| create_expected_entry(&x))
+                                        .collect();
+
+        assert!(factory.send_many(paths, send).is_ok());
+
+        let mut entries: Vec<Entry> = Vec::with_capacity(4);
+		loop {
+			match recv.try_recv() {
+				Ok(entry) => entries.push(entry.unwrap()),
+				_ => break,
+			}
+        }
+
+        assert_that(entries, is(equal_to(expected)));
+    }
+
+    #[test]
+    fn test_entry_factory_send_many_returns_all_failed_paths() {
+        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
+
+        let paths = vec![PathBuf::from("a.jpg"),
+                         PathBuf::from("b.jpg"),
+                         PathBuf::from("c.jpg"),
+                         PathBuf::from("d.jpg")];
+        let (send, recv) = channel::<Result<Entry, IOError>>();
+        drop(recv);
+
+        let err = factory.send_many(paths.clone(), send).unwrap_err();
+
+        let expected: Vec<Result<Entry, IOError>>;
+        for path in paths.into_iter() {
+            expected.push(factory.create(path))
+        }
+        assert_that(err.failed, is(equal_to(expected)))
     }
 
     fn create_expected_entry(path: &PathBuf) -> Entry {
