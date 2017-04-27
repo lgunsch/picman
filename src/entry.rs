@@ -97,7 +97,7 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     }
 
     /// Creates and sends `Entry` instances on a
-    pub fn send_many(&mut self, paths: Vec<PathBuf>, sender: Sender<Result<Entry, IOError>>)
+    pub fn send_many(&mut self, paths: Vec<PathBuf>, sender: &Sender<Result<Entry, IOError>>)
                      -> Result<(), EntrySendError> {
         let mut unsendable = Vec::new();
         for path in paths.into_iter() {
