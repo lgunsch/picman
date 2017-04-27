@@ -24,6 +24,12 @@ impl Entry {
     }
 }
 
+impl fmt::Display for Entry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}  {}", self.hashes.join(", "), self.path.display())
+    }
+}
+
 
 pub trait ReadOpener {
     type Readable: Read;
