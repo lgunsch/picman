@@ -33,19 +33,19 @@ pub trait ReadOpener {
 
 #[derive(Debug)]
 pub struct EntrySendError {
-	pub failed: Vec<Result<PathBuf, IOError>>,
+    pub failed: Vec<Result<PathBuf, IOError>>,
 }
 
 impl fmt::Display for EntrySendError {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "Hello from EntrySendError!")
-	}
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Hello from EntrySendError!")
+    }
 }
 
 impl Error for EntrySendError {
-	fn description(&self) -> &str {
-		"string?"
-	}
+    fn description(&self) -> &str {
+        "string?"
+    }
 }
 
 
@@ -202,11 +202,11 @@ mod test {
         assert!(factory.send_many(paths, send).is_ok());
 
         let mut entries: Vec<Entry> = Vec::with_capacity(4);
-		loop {
-			match recv.try_recv() {
-				Ok(entry) => entries.push(entry.unwrap()),
-				_ => break,
-			}
+        loop {
+            match recv.try_recv() {
+                Ok(entry) => entries.push(entry.unwrap()),
+                _ => break,
+            }
         }
 
         assert_that!(entries, is(equal_to(expected)));
