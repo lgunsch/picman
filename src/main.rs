@@ -7,7 +7,7 @@ extern crate walker;
 // FIXME(#19470): Remove once rust bug is fixed.
 extern crate rustc_serialize;
 
-#[cfg(test)] extern crate hamcrest;
+#[cfg(test)] #[macro_use] extern crate hamcrest;
 #[cfg(test)] pub mod tests;  // integration tests
 
 pub mod path;

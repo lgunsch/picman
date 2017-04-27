@@ -135,7 +135,7 @@ impl ReadOpener for FileReadOpener {
 #[cfg(test)]
 mod test {
     use super::*;
-    use hamcrest::{assert_that, is, equal_to};
+    use hamcrest::prelude::*;
     use std::io::{Cursor, Read, Write};
     use std::io::Error as IOError;
     use std::path::PathBuf;
@@ -154,8 +154,8 @@ mod test {
             let mut cursor = Cursor::new(Vec::new());
             // use path &str as file contents for testing
             let data: &[u8] = path.as_path().to_str().unwrap().as_bytes();
-            assert_that(cursor.write(&data).unwrap(),
-                        is(equal_to(data.len())));
+            assert_that!(cursor.write(&data).unwrap(),
+                         is(equal_to(data.len())));
             cursor.set_position(0);
             Ok(cursor)
         }
@@ -169,7 +169,7 @@ mod test {
         let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
         let entry = factory.create(path).unwrap();
 
-        assert_that(entry, is(equal_to(expected)));
+        assert_that!(entry, is(equal_to(expected)));
     }
 
     #[test]
@@ -182,7 +182,7 @@ mod test {
         factory.create(path.clone()).unwrap();
         // This second create will fail if initial_digest is not reset.
         let entry = factory.create(path).unwrap();
-        assert_that(entry, is(equal_to(expected)));
+        assert_that!(entry, is(equal_to(expected)));
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod test {
 			}
         }
 
-        assert_that(entries, is(equal_to(expected)));
+        assert_that!(entries, is(equal_to(expected)));
     }
 
     #[test]
@@ -226,7 +226,7 @@ mod test {
         let err: EntrySendError = factory.send_many(paths.clone(), send).unwrap_err();
         let failed_paths: Vec<PathBuf> = err.failed.into_iter().map(|r| r.unwrap()).collect();
 
-        assert_that(failed_paths, is(equal_to(paths)));
+        assert_that!(failed_paths, is(equal_to(paths)));
     }
 
     fn create_expected_entry(path: &PathBuf) -> Entry {
