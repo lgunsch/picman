@@ -11,6 +11,4 @@ regex = "~0"
 rust-crypto = "0.2.34"
 rustc-serialize = "~0"
 walker = "^1.0.0"
-
-[dependencies.hamcrest]
-git = "https://github.com/carllerche/hamcrest-rust.git"
+hamcrest = "0.1.3"
