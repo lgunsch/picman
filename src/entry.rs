@@ -100,7 +100,7 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
                 Ok(_) => {},
                 Err(SendError(entry)) => {
                     match entry {
-                        Ok(Entry {path: path, ..}) => unsendable.push(Ok(path)),
+                        Ok(Entry {path, ..}) => unsendable.push(Ok(path)),
                         Err(err) => unsendable.push(Err(err)),
                     }
                 }
