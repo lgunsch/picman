@@ -205,7 +205,7 @@ mod test {
                                         .map(|ref x| create_expected_entry(&x))
                                         .collect();
 
-        assert!(factory.send_many(paths, send).is_ok());
+        assert!(factory.send_many(paths, &send).is_ok());
 
         let mut entries: Vec<Entry> = Vec::with_capacity(4);
         loop {
@@ -229,7 +229,7 @@ mod test {
         let (send, recv) = channel::<Result<Entry, IOError>>();
         drop(recv);
 
-        let err: EntrySendError = factory.send_many(paths.clone(), send).unwrap_err();
+        let err: EntrySendError = factory.send_many(paths.clone(), &send).unwrap_err();
         let failed_paths: Vec<PathBuf> = err.failed.into_iter().map(|r| r.unwrap()).collect();
 
         assert_that!(failed_paths, is(equal_to(paths)));
