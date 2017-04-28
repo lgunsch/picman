@@ -64,7 +64,7 @@ impl PathExtensionFilter {
 mod test {
     use super::*;
     use std::path::Path;
-    use hamcrest::{assert_that, is, equal_to};
+    use hamcrest::prelude::*;
 
     static PATHS: [&'static str; 7] = ["a.jpeg", "b.jpg", "c.JpEG",
                                        "d.png", "e.PnG", "f.bmp",
@@ -80,7 +80,7 @@ mod test {
 
         for p in PATHS.iter() {
             let path = Path::new(p);
-            assert_that(filter.is_match(path), is(equal_to(true)));
+            assert_that!(filter.is_match(path), is(equal_to(true)));
         }
     }
 
@@ -91,7 +91,7 @@ mod test {
         assert!(filter.add_extension_regex("txt".to_string(), r"^(?i)txt$".to_string()).is_ok());
         for p in PATHS.iter() {
             let path = Path::new(p);
-            assert_that(filter.is_match(path), is(equal_to(false)));
+            assert_that!(filter.is_match(path), is(equal_to(false)));
         }
     }
 

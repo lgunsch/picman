@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 
 use crypto::md5::Md5;
-use hamcrest::{assert_that, is, equal_to};
+use hamcrest::prelude::*;
 
 use entry::{Entry, EntryFactory, FileReadOpener};
 
@@ -16,5 +16,5 @@ fn entry_factory_creates_entry() {
         path: path,
         hashes: vec!["73c4b3758af64736831438b028ac4524".to_string()]  // computed externally using md5sum
     };
-    assert_that(entry, is(equal_to(expected)));
+    assert_that!(entry, is(equal_to(expected)));
 }

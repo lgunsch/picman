@@ -39,7 +39,7 @@ mod test {
     use super::*;
     use std::path::PathBuf;
     use path::PathExtensionFilter;
-    use hamcrest::{assert_that, is, equal_to};
+    use hamcrest::prelude::*;
 
     fn create() -> Paths {
         let mut loader = Paths::new();
@@ -57,7 +57,7 @@ mod test {
                              PathBuf::from("b.png"),
                              PathBuf::from("c.jpeg"),
                              PathBuf::from("d.JPEG")];
-        assert_that(loader.all(), is(equal_to(&expected)));
+        assert_that!(loader.all(), is(equal_to(&expected)));
     }
 
     #[test]
@@ -68,12 +68,12 @@ mod test {
         loader.apply_filter(&filter);
 
         let expected = vec![PathBuf::from("c.jpeg"), PathBuf::from("d.JPEG")];
-        assert_that(loader.all(), is(equal_to(&expected)));
+        assert_that!(loader.all(), is(equal_to(&expected)));
     }
 
     #[test]
     fn test_count() {
         let loader = create();
-        assert_that(loader.count(), is(equal_to(4)));
+        assert_that!(loader.count(), is(equal_to(4)));
     }
 }
