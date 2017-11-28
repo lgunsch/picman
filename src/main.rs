@@ -1,3 +1,5 @@
+#![cfg_attr(feature="clippy", feature(plugin))]
+
 extern crate crypto;
 extern crate docopt;
 #[macro_use] extern crate log;
