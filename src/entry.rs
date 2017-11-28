@@ -5,13 +5,12 @@ use std::fmt;
 use std::fs::File;
 use std::path::PathBuf;
 use std::sync::mpsc::{Sender, SendError};
-use std::vec::Vec;
 
 use crypto::digest::Digest;
 
 
 /// Represents a single file, with its computed hash digest values
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Entry {
     pub path: PathBuf,
     pub hashes: Vec<String>,

@@ -15,6 +15,7 @@ extern crate rustc_serialize;
 pub mod path;
 pub mod entry;
 pub mod logger;
+pub mod duplication;
 
 use std::io::Error as IOError;
 use std::path::PathBuf;
