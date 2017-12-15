@@ -12,9 +12,7 @@ fn entry_factory_creates_entry() {
     let path = PathBuf::from("./src/tests/assets/barbara.png");
     let entry = factory.create(path.clone()).unwrap();
 
-    let expected = Entry {
-        path: path,
-        hashes: vec!["73c4b3758af64736831438b028ac4524".to_string()]  // computed externally using md5sum
-    };
+    // hash computed externally using md5sum
+    let expected = Entry::new(path, "73c4b3758af64736831438b028ac4524");
     assert_that!(entry, is(equal_to(expected)));
 }

@@ -13,19 +13,21 @@ use crypto::digest::Digest;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Entry {
     pub path: PathBuf,
-    pub hashes: Vec<String>,
+    pub primary_hash: String,
+    pub secondary_hash: Option<String>,
 }
 
 impl Entry {
     /// Creates a new `Entry` with the given path.
-    pub fn new(path: PathBuf) -> Entry {
-        Entry {path: path, hashes: Vec::new()}
+    pub fn new<P, H>(path: P, primary_hash: H) -> Entry where P: Into<PathBuf>, H: Into<String> {
+        Entry {path: path.into(), primary_hash: primary_hash.into(), secondary_hash: None}
     }
 }
 
 impl fmt::Display for Entry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}  {}", self.hashes.join(", "), self.path.display())
+        write!(f, "primary-hash:{} second-hash: {} {}", self.primary_hash,
+               self.secondary_hash.as_ref().unwrap_or(&"".to_string()), self.path.display())
     }
 }
 
@@ -88,11 +90,10 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
             }
         }
 
-        let mut hashes = Vec::new();
-        hashes.push(self.initial_digest.result_str());
+        let primary_hash = self.initial_digest.result_str();
         self.initial_digest.reset();
 
-        Ok(Entry {path: path, hashes: hashes})
+        Ok(Entry::new(path, primary_hash))
     }
 
     /// Creates and sends `Entry` instances on a
@@ -242,7 +243,6 @@ mod test {
         let mut md5 = Md5::new();
         md5.input(&mut buf[..]);
 
-        Entry {path: path.clone(),
-               hashes: vec![md5.result_str()]}
+        Entry::new(path.clone(), md5.result_str())
     }
 }

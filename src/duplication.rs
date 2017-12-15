@@ -15,7 +15,7 @@ impl DuplicationMap {
     }
 
     pub fn push(&mut self, entry: Entry) {
-        let key = entry.hashes[0].clone();
+        let key = entry.primary_hash.clone();
         match self.map.entry(key) {
             Occupied(o) => o.into_mut().push(entry),
             Vacant(v) => v.insert(Vec::new()).push(entry),
@@ -36,38 +36,27 @@ impl Iterator for DuplicationMapIterator {
 
         let entries: Vec<Entry> = match self.map_iter.next() {
             Some((_k, v)) => v,
-            None => return None,
+            None => return None,  // FIXME: does this abandon some entries?
         };
 
         let mut curr: Vec<Entry> = Vec::new();
         for entry in entries {
 
-            // try and_Then here
+            // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
 
-            if curr.last().map_or(false, |e| {
-                if e.hashes[1] == entry.hashes[1] {
-                    curr.push(entry);
-                } else {
-                    self.duplicates.push(curr);
-                    curr = vec![entry];
-                }
-                return true;
-            }) {
-                curr.push(entry);
-            }
-        //     let last = curr.last();
-        //     match last {
-        //         Some(e) => {
-        //             if e.hashes[1] == entry.hashes[1] {
-        //                 curr.push(entry);
-        //             } else {
-        //                 self.duplicates.push(curr);
-        //                 curr = vec![entry];
-        //             }
-        //         },
-        //         None => curr.push(entry),
-        //     };
-        // }
+            match curr.last().map(|e| e.clone()) {
+                Some(e) => {
+                    // it's a bug if the secondary_hash doesn't exist by now
+                    if e.secondary_hash.as_ref().unwrap() == entry.secondary_hash.as_ref().unwrap() {
+                        curr.push(entry);
+                    } else {
+                        self.duplicates.push(curr);
+                        curr = vec![entry];
+                    }
+                },
+                None => curr.push(entry),
+            };
+        }
         return self.duplicates.pop();
     }
 }
@@ -85,7 +74,6 @@ impl IntoIterator for DuplicationMap {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::path::PathBuf;
     use hamcrest::prelude::*;
 
     #[test]
@@ -116,11 +104,11 @@ mod test {
     #[test]
     fn test_duplication_map_splits_second_hash_unique() {
         let mut map = DuplicationMap::new();
-        let mut entry1 = make_entry("entry-1", "hash-1");
-        let mut entry2 = make_entry("entry-2", "hash-1");
+        let mut entry1 = Entry::new("entry-1", "hash-1");
+        let mut entry2 = Entry::new("entry-2", "hash-1");
 
-        entry1.hashes.push("hash-1-1".into());
-        entry2.hashes.push("hash-1-2".into());
+        entry1.secondary_hash = Some("hash-1-1".into());
+        entry2.secondary_hash = Some("hash-1-2".into());
 
         map.push(entry1.clone());
         map.push(entry2.clone());
@@ -131,15 +119,9 @@ mod test {
         assert_that!(iter.next(), is(equal_to(Some(vec![entry2]))));
     }
 
-    fn add_entry<I: Into<String>>(map: &mut DuplicationMap, path: I, hash: I) -> Entry {
-        let entry = make_entry(path, hash);
+    fn add_entry(map: &mut DuplicationMap, path: &str, hash: &str) -> Entry {
+        let entry = Entry::new(path, hash);
         map.push(entry.clone());
-        return entry;
-    }
-
-    fn make_entry<I: Into<String>>(path: I, hash: I) -> Entry {
-        let mut entry = Entry::new(PathBuf::from(path.into()));
-        entry.hashes = vec![hash.into()];
         return entry;
     }
 }
