@@ -1,12 +1,12 @@
 use std::error::Error;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::io::Error as IOError;
 use std::fmt;
-use std::fs::File;
 use std::path::PathBuf;
 use std::sync::mpsc::{Sender, SendError};
 
 use crypto::digest::Digest;
+use utils::ReadOpener;
 
 
 /// Represents a single file, with its computed hash digest values
@@ -18,7 +18,7 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// Creates a new `Entry` with the given path.
+    /// Creates a new `Entry` with the given path and primary_hash digest string.
     pub fn new<P, H>(path: P, primary_hash: H) -> Entry where P: Into<PathBuf>, H: Into<String> {
         Entry {path: path.into(), primary_hash: primary_hash.into(), secondary_hash: None}
     }
@@ -29,13 +29,6 @@ impl fmt::Display for Entry {
         write!(f, "primary-hash:{} second-hash: {} {}", self.primary_hash,
                self.secondary_hash.as_ref().unwrap_or(&"".to_string()), self.path.display())
     }
-}
-
-
-pub trait ReadOpener {
-    type Readable: Read;
-    /// Creates a new `Readable` type, given a `PathBuf`.
-    fn get_reader(&mut self, &PathBuf) -> Result<Self::Readable, IOError>;
 }
 
 #[derive(Debug)]
@@ -121,23 +114,6 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     }
 }
 
-pub struct FileReadOpener;
-
-impl FileReadOpener {
-    pub fn new() -> FileReadOpener {
-        FileReadOpener
-    }
-}
-
-impl ReadOpener for FileReadOpener {
-    type Readable = File;
-
-    fn get_reader(&mut self, path: &PathBuf) -> Result<File, IOError> {
-        File::open(&path)
-    }
-}
-
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -202,8 +178,8 @@ mod test {
         let (send, recv) = channel::<Result<Entry, IOError>>();
 
         let expected: Vec<Entry> = paths.iter()
-                                        .map(|ref x| create_expected_entry(&x))
-                                        .collect();
+            .map(|ref x| create_expected_entry(&x))
+            .collect();
 
         assert!(factory.send_many(paths, &send).is_ok());
 

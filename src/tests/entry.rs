@@ -4,7 +4,8 @@ use std::path::PathBuf;
 use crypto::md5::Md5;
 use hamcrest::prelude::*;
 
-use entry::{Entry, EntryFactory, FileReadOpener};
+use entry::{Entry, EntryFactory};
+use utils::FileReadOpener;
 
 #[test]
 fn entry_factory_creates_entry() {

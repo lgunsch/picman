@@ -12,10 +12,11 @@ extern crate rustc_serialize;
 #[cfg(test)] #[macro_use] extern crate hamcrest;
 #[cfg(test)] pub mod tests;  // integration tests
 
-pub mod path;
+pub mod duplication;
 pub mod entry;
 pub mod logger;
-pub mod duplication;
+pub mod path;
+pub mod utils;
 
 use std::io::Error as IOError;
 use std::path::PathBuf;
@@ -29,7 +30,8 @@ use walker::Walker;
 
 use logger::Logger;
 use path::Paths;
-use entry::{Entry, EntryFactory, FileReadOpener};
+use entry::{Entry, EntryFactory};
+use utils::FileReadOpener;
 
 static VERSION: &'static str = "v0.1.0-dev";
 
