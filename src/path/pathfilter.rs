@@ -1,42 +1,48 @@
-use regex::{Regex, Error};
+use regex::{Error, Regex};
 use std::collections::HashMap;
 use std::path::Path;
 use std::vec::Vec;
 
 pub struct PathExtensionFilter {
-    extension_patterns: HashMap<String, Regex>
+    extension_patterns: HashMap<String, Regex>,
 }
 
 impl PathExtensionFilter {
     pub fn new() -> PathExtensionFilter {
-        PathExtensionFilter { extension_patterns: HashMap::new() }
+        PathExtensionFilter {
+            extension_patterns: HashMap::new(),
+        }
     }
 
     pub fn add_jpeg(&mut self) -> Result<(), Error> {
-        try!(self.add_extension_regex("jpeg".to_string(),
-                                      r"(?i)jpe?g$".to_string()));
+        try!(self.add_extension_regex("jpeg".to_string(), r"(?i)jpe?g$".to_string()));
         return Ok(());
     }
 
     pub fn add_png(&mut self) -> Result<(), Error> {
-        try!(self.add_extension_regex("png".to_string(),
-                                      r"(?i)png$".to_string()));
+        try!(self.add_extension_regex("png".to_string(), r"(?i)png$".to_string()));
         return Ok(());
     }
 
     pub fn add_bmp(&mut self) -> Result<(), Error> {
-        try!(self.add_extension_regex("bmp".to_string(),
-                                      r"(?i)bmp$".to_string()));
+        try!(self.add_extension_regex("bmp".to_string(), r"(?i)bmp$".to_string()));
         return Ok(());
     }
 
-    pub fn add_extension_regex<T: Into<String>>(&mut self, extension: T, expr: T) -> Result<(), Error> {
+    pub fn add_extension_regex<T: Into<String>>(
+        &mut self,
+        extension: T,
+        expr: T,
+    ) -> Result<(), Error> {
         let re = try!(Regex::new(&expr.into()));
         self.extension_patterns.insert(extension.into(), re);
         return Ok(());
     }
 
-    pub fn add_many_extension_regex<T: Into<String>>(&mut self, expressions: Vec<(T, T)>) -> Result<(), Error> {
+    pub fn add_many_extension_regex<T: Into<String>>(
+        &mut self,
+        expressions: Vec<(T, T)>,
+    ) -> Result<(), Error> {
         for (name, expr) in expressions.into_iter() {
             try!(self.add_extension_regex(name.into(), expr.into()));
         }
@@ -48,12 +54,12 @@ impl PathExtensionFilter {
             let ext = match path.extension() {
                 Some(ext) => match ext.to_str() {
                     Some(s) => s,
-                    None => continue  // not a valid match, its not even unicode
+                    None => continue, // not a valid match, its not even unicode
                 },
-                None => ""
+                None => "",
             };
             if re.is_match(ext) {
-                return true
+                return true;
             }
         }
         false
@@ -66,9 +72,9 @@ mod test {
     use std::path::Path;
     use hamcrest::prelude::*;
 
-    static PATHS: [&'static str; 7] = ["a.jpeg", "b.jpg", "c.JpEG",
-                                       "d.png", "e.PnG", "f.bmp",
-                                       "f.BmP"];
+    static PATHS: [&'static str; 7] = [
+        "a.jpeg", "b.jpg", "c.JpEG", "d.png", "e.PnG", "f.bmp", "f.BmP"
+    ];
 
     #[test]
     fn test_is_match() {
@@ -88,7 +94,11 @@ mod test {
     fn test_not_match() {
         let mut filter = PathExtensionFilter::new();
 
-        assert!(filter.add_extension_regex("txt".to_string(), r"^(?i)txt$".to_string()).is_ok());
+        assert!(
+            filter
+                .add_extension_regex("txt".to_string(), r"^(?i)txt$".to_string())
+                .is_ok()
+        );
         for p in PATHS.iter() {
             let path = Path::new(p);
             assert_that!(filter.is_match(path), is(equal_to(false)));
@@ -98,14 +108,21 @@ mod test {
     #[test]
     fn test_bad_regex_error() {
         let mut filter = PathExtensionFilter::new();
-        assert!(filter.add_extension_regex("bmp".to_string(), r"($".to_string()).is_err());
+        assert!(
+            filter
+                .add_extension_regex("bmp".to_string(), r"($".to_string())
+                .is_err()
+        );
     }
 
     #[test]
     fn test_slices_accepted() {
         let mut filter = PathExtensionFilter::new();
         assert!(filter.add_extension_regex("bmp", "bmp").is_ok());
-        assert!(filter.add_many_extension_regex(vec![("bmp", "bmp"),
-                                                     ("jpg", "jpg")]).is_ok());
+        assert!(
+            filter
+                .add_many_extension_regex(vec![("bmp", "bmp"), ("jpg", "jpg")])
+                .is_ok()
+        );
     }
 }

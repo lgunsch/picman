@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::vec::Vec;
 
 pub struct Paths {
-    paths: Vec<PathBuf>
+    paths: Vec<PathBuf>,
 }
 
 impl Paths {
@@ -43,20 +43,24 @@ mod test {
 
     fn create() -> Paths {
         let mut loader = Paths::new();
-        loader.add_many(vec![PathBuf::from("a.txt"),
-                             PathBuf::from("b.png"),
-                             PathBuf::from("c.jpeg"),
-                             PathBuf::from("d.JPEG")]);
+        loader.add_many(vec![
+            PathBuf::from("a.txt"),
+            PathBuf::from("b.png"),
+            PathBuf::from("c.jpeg"),
+            PathBuf::from("d.JPEG"),
+        ]);
         return loader;
     }
 
     #[test]
     fn test_path_loader_add_many() {
         let loader = create();
-        let expected = vec![PathBuf::from("a.txt"),
-                             PathBuf::from("b.png"),
-                             PathBuf::from("c.jpeg"),
-                             PathBuf::from("d.JPEG")];
+        let expected = vec![
+            PathBuf::from("a.txt"),
+            PathBuf::from("b.png"),
+            PathBuf::from("c.jpeg"),
+            PathBuf::from("d.JPEG"),
+        ];
         assert_that!(loader.all(), is(equal_to(&expected)));
     }
 

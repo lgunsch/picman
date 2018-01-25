@@ -31,23 +31,31 @@ impl ReadOpener for FileReadOpener {
     }
 }
 
-
 /// Computes message digest of files
-pub struct HashDigester<D, R> where D: Digest, R: ReadOpener {
+pub struct HashDigester<D, R>
+where
+    D: Digest,
+    R: ReadOpener,
+{
     digest: D,
     read_opener: R,
 }
 
-impl<D, R> HashDigester<D, R> where D: Digest, R: ReadOpener {
+impl<D, R> HashDigester<D, R>
+where
+    D: Digest,
+    R: ReadOpener,
+{
     pub fn new(digest: D, read_opener: R) -> HashDigester<D, R> {
-        HashDigester {digest: digest, read_opener: read_opener}
+        HashDigester {
+            digest: digest,
+            read_opener: read_opener,
+        }
     }
 
     /// Computes and returns a String message digest of the file.
     pub fn get_digest(&mut self, path: &PathBuf) -> Result<String, IOError> {
-        let mut reader = BufReader::new(
-            try!(self.read_opener.get_reader(&path))
-        );
+        let mut reader = BufReader::new(try!(self.read_opener.get_reader(&path)));
 
         loop {
             let nread = {

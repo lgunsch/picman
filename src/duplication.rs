@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::vec::Vec;
 
-use entry::{Entry};
+use entry::Entry;
 
 pub struct DuplicationMap {
     map: HashMap<String, Vec<Entry>>,
@@ -11,13 +11,13 @@ pub struct DuplicationMap {
 impl DuplicationMap {
     pub fn new() -> DuplicationMap {
         let map = HashMap::new();
-        DuplicationMap {map: map}
+        DuplicationMap { map: map }
     }
 
     pub fn push(&mut self, entry: Entry) {
         let key = entry.primary_hash.clone();
         match self.map.entry(key) {
-            Occupied(o) => o.into_mut().push(entry),  // FIXME: Add a secondary hash here somehow
+            Occupied(o) => o.into_mut().push(entry), // FIXME: Add a secondary hash here somehow
             Vacant(v) => v.insert(Vec::new()).push(entry),
         };
     }
@@ -36,24 +36,24 @@ impl Iterator for DuplicationMapIterator {
 
         let entries: Vec<Entry> = match self.map_iter.next() {
             Some((_k, v)) => v,
-            None => return None,  // FIXME: does this abandon some entries?
+            None => return None, // FIXME: does this abandon some entries?
         };
 
         let mut curr: Vec<Entry> = Vec::new();
         for entry in entries {
-
             // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
 
             match curr.last().map(|e| e.clone()) {
                 Some(e) => {
                     // it's a bug if the secondary_hash doesn't exist by now
-                    if e.secondary_hash.as_ref().unwrap() == entry.secondary_hash.as_ref().unwrap() {
+                    if e.secondary_hash.as_ref().unwrap() == entry.secondary_hash.as_ref().unwrap()
+                    {
                         curr.push(entry);
                     } else {
                         self.duplicates.push(curr);
                         curr = vec![entry];
                     }
-                },
+                }
                 None => curr.push(entry),
             };
         }
@@ -66,8 +66,10 @@ impl IntoIterator for DuplicationMap {
     type IntoIter = DuplicationMapIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        DuplicationMapIterator { map_iter: self.map.into_iter(),
-                                 duplicates: Vec::new() }
+        DuplicationMapIterator {
+            map_iter: self.map.into_iter(),
+            duplicates: Vec::new(),
+        }
     }
 }
 
@@ -80,7 +82,7 @@ mod test {
     fn test_duplication_map_groups_duplicate_entries() {
         let mut map = DuplicationMap::new();
         let entry1 = add_entry(&mut map, "entry-1", "hash-1");
-        let entry2 = add_entry(&mut map, "entry-2", "hash-1");  // duplicate
+        let entry2 = add_entry(&mut map, "entry-2", "hash-1"); // duplicate
 
         let mut iter = map.into_iter();
 

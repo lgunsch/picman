@@ -1,16 +1,20 @@
-#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", feature(plugin))]
 
 extern crate crypto;
 extern crate docopt;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 extern crate regex;
 extern crate walker;
 
 // FIXME(#19470): Remove once rust bug is fixed.
 extern crate rustc_serialize;
 
-#[cfg(test)] #[macro_use] extern crate hamcrest;
-#[cfg(test)] pub mod tests;  // integration tests
+#[cfg(test)]
+#[macro_use]
+extern crate hamcrest;
+#[cfg(test)]
+pub mod tests; // integration tests
 
 pub mod duplication;
 pub mod entry;
@@ -58,11 +62,11 @@ fn main() {
     // Error.exit() used below prints out an appropriate usage message,
     // which is why we don't panic instead.
     let args: Args = Docopt::new(USAGE)
-                             .unwrap_or_else(|e| e.exit())
-                             .help(true)
-                             .version(Some(VERSION.to_string()))
-                             .decode()
-                             .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|e| e.exit())
+        .help(true)
+        .version(Some(VERSION.to_string()))
+        .decode()
+        .unwrap_or_else(|e| e.exit());
 
     set_global_logger();
 
@@ -84,8 +88,7 @@ fn main() {
 
 /// Populate `paths` given a root directory `path`
 fn load_dir(path: PathBuf, paths: &mut Paths) {
-    let dir_err_msg = format!("cannot read directory `{}`",
-                              path.as_path().display());
+    let dir_err_msg = format!("cannot read directory `{}`", path.as_path().display());
     let path_iter = match Walker::new(path.as_path()) {
         Ok(t) => t,
         Err(e) => {
@@ -99,7 +102,7 @@ fn load_dir(path: PathBuf, paths: &mut Paths) {
                 if !entry.path().is_dir() {
                     paths.add(entry.path())
                 }
-            },
+            }
             Err(why) => warn!("cannot add path: {}", why),
         }
     }
@@ -107,8 +110,11 @@ fn load_dir(path: PathBuf, paths: &mut Paths) {
 
 /// Spawn n worker threads, each running an `EntryFactory` to create and
 /// send `Entry` instances into the `sender` channel.
-fn spawn_factory_workers(threads: usize, paths: &Vec<PathBuf>,
-                         sender: Sender<Result<Entry, IOError>>) {
+fn spawn_factory_workers(
+    threads: usize,
+    paths: &Vec<PathBuf>,
+    sender: Sender<Result<Entry, IOError>>,
+) {
     let size: usize = paths.len() / threads;
     for paths_slice in paths.chunks(size) {
         let paths = paths_slice.to_vec();
@@ -121,13 +127,11 @@ fn factory_worker(paths: Vec<PathBuf>, sender: Sender<Result<Entry, IOError>>) {
     let digester = HashDigester::new(Md5::new(), FileReadOpener::new());
     let mut factory = EntryFactory::new(digester);
     match factory.send_many(paths, &sender) {
-        Ok(_) => {},
-        Err(err) => {
-            for maybe_path in err.failed.into_iter() {
-                match maybe_path {
-                    Ok(path) => error!("cannot evaluate {}", path.display()),
-                    Err(why) => error!("{}", why),
-                }
+        Ok(_) => {}
+        Err(err) => for maybe_path in err.failed.into_iter() {
+            match maybe_path {
+                Ok(path) => error!("cannot evaluate {}", path.display()),
+                Err(why) => error!("{}", why),
             }
         },
     }
@@ -143,14 +147,14 @@ fn consume_entries(paths: &Vec<PathBuf>, recv: Receiver<Result<Entry, IOError>>)
                 Ok(entry) => {
                     info!("{}", entry);
                     entries.push(entry);
-                },
+                }
                 Err(err) => error!("{}", err),
             },
             _ => {
                 if entries.len() >= paths.len() {
                     break;
                 }
-            },
+            }
         }
     }
 }

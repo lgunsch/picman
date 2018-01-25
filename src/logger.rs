@@ -1,4 +1,4 @@
-use log::{Log, LogRecord, LogMetadata, MaxLogLevelFilter};
+use log::{Log, LogMetadata, LogRecord, MaxLogLevelFilter};
 
 pub struct Logger {
     max_level_filter: MaxLogLevelFilter,
@@ -6,7 +6,9 @@ pub struct Logger {
 
 impl Logger {
     pub fn new(max_level_filter: MaxLogLevelFilter) -> Logger {
-        Logger { max_level_filter: max_level_filter }
+        Logger {
+            max_level_filter: max_level_filter,
+        }
     }
 }
 

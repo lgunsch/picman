@@ -7,7 +7,6 @@ use std::sync::mpsc::{SendError, Sender};
 use crypto::digest::Digest;
 use utils::{HashDigester, ReadOpener};
 
-
 /// Represents a single file, with its computed hash digest values
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Entry {
@@ -18,15 +17,28 @@ pub struct Entry {
 
 impl Entry {
     /// Creates a new `Entry` with the given path and primary_hash digest string.
-    pub fn new<P, H>(path: P, primary_hash: H) -> Entry where P: Into<PathBuf>, H: Into<String> {
-        Entry {path: path.into(), primary_hash: primary_hash.into(), secondary_hash: None}
+    pub fn new<P, H>(path: P, primary_hash: H) -> Entry
+    where
+        P: Into<PathBuf>,
+        H: Into<String>,
+    {
+        Entry {
+            path: path.into(),
+            primary_hash: primary_hash.into(),
+            secondary_hash: None,
+        }
     }
 }
 
 impl fmt::Display for Entry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "primary-hash:{} second-hash: {} {}", self.primary_hash,
-               self.secondary_hash.as_ref().unwrap_or(&"".to_string()), self.path.display())
+        write!(
+            f,
+            "primary-hash:{} second-hash: {} {}",
+            self.primary_hash,
+            self.secondary_hash.as_ref().unwrap_or(&"".to_string()),
+            self.path.display()
+        )
     }
 }
 
@@ -47,14 +59,21 @@ impl Error for EntrySendError {
     }
 }
 
-
 /// Creates `Entry` instances from a `PathBuf`, and populates them
 /// with an initial `Digest` hash.
-pub struct EntryFactory<D, R> where D: Digest, R: ReadOpener {
+pub struct EntryFactory<D, R>
+where
+    D: Digest,
+    R: ReadOpener,
+{
     primary_digester: HashDigester<D, R>,
 }
 
-impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
+impl<D, R> EntryFactory<D, R>
+where
+    D: Digest,
+    R: ReadOpener,
+{
     /// Creates an `EntryFactory` using the initial `Digest`, and `ReadOpener`.
     pub fn new(digester: HashDigester<D, R>) -> EntryFactory<D, R> {
         EntryFactory {
@@ -69,8 +88,11 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     }
 
     /// Creates and sends `Entry` instances on a
-    pub fn send_many(&mut self, paths: Vec<PathBuf>, sender: &Sender<Result<Entry, IOError>>)
-                     -> Result<(), EntrySendError> {
+    pub fn send_many(
+        &mut self,
+        paths: Vec<PathBuf>,
+        sender: &Sender<Result<Entry, IOError>>,
+    ) -> Result<(), EntrySendError> {
         let mut unsendable = Vec::new();
         for path in paths.into_iter() {
             let entry = self.create(path);
@@ -129,7 +151,7 @@ mod test {
             PathBuf::from("d.jpg"),
         ];
 
-        for path in & paths {
+        for path in &paths {
             opener.add_path(&path, create_cursor(&path));
         }
 
@@ -166,7 +188,7 @@ mod test {
             PathBuf::from("d.jpg"),
         ];
 
-        for path in & paths {
+        for path in &paths {
             opener.add_path(&path, create_cursor(&path));
         }
 
