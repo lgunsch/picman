@@ -1,12 +1,11 @@
 use std::error::Error;
-use std::io::{BufRead, BufReader};
 use std::io::Error as IOError;
 use std::fmt;
 use std::path::PathBuf;
-use std::sync::mpsc::{Sender, SendError};
+use std::sync::mpsc::{SendError, Sender};
 
 use crypto::digest::Digest;
-use utils::ReadOpener;
+use utils::{HashDigester, ReadOpener};
 
 
 /// Represents a single file, with its computed hash digest values
@@ -52,40 +51,20 @@ impl Error for EntrySendError {
 /// Creates `Entry` instances from a `PathBuf`, and populates them
 /// with an initial `Digest` hash.
 pub struct EntryFactory<D, R> where D: Digest, R: ReadOpener {
-    initial_digest: D,
-    read_opener: R,
+    primary_digester: HashDigester<D, R>,
 }
 
 impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
     /// Creates an `EntryFactory` using the initial `Digest`, and `ReadOpener`.
-    pub fn new(digest: D, read_opener: R) -> EntryFactory<D, R> {
+    pub fn new(digester: HashDigester<D, R>) -> EntryFactory<D, R> {
         EntryFactory {
-            initial_digest: digest,
-            read_opener: read_opener,
+            primary_digester: digester,
         }
     }
 
     /// Creates an `Entry`, also computing its first digest.
-    pub fn create(&mut self, path: PathBuf) -> Result<Entry, IOError>  {
-        let mut reader = BufReader::new(
-            try!(self.read_opener.get_reader(&path))
-        );
-
-        loop {
-            let nread = {
-                let buf = try!(reader.fill_buf());
-                self.initial_digest.input(buf);
-                buf.len()
-            };
-            reader.consume(nread);
-            if nread == 0 {
-                break;
-            }
-        }
-
-        let primary_hash = self.initial_digest.result_str();
-        self.initial_digest.reset();
-
+    pub fn create(&mut self, path: PathBuf) -> Result<Entry, IOError> {
+        let primary_hash = self.primary_digester.get_digest(&path)?;
         Ok(Entry::new(path, primary_hash))
     }
 
@@ -96,18 +75,16 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
         for path in paths.into_iter() {
             let entry = self.create(path);
             match sender.send(entry) {
-                Ok(_) => {},
-                Err(SendError(entry)) => {
-                    match entry {
-                        Ok(Entry {path, ..}) => unsendable.push(Ok(path)),
-                        Err(err) => unsendable.push(Err(err)),
-                    }
-                }
+                Ok(_) => {}
+                Err(SendError(entry)) => match entry {
+                    Ok(Entry { path, .. }) => unsendable.push(Ok(path)),
+                    Err(err) => unsendable.push(Err(err)),
+                },
             }
         }
 
         if unsendable.len() > 0 {
-            Err(EntrySendError{ failed: unsendable })
+            Err(EntrySendError { failed: unsendable })
         } else {
             Ok(())
         }
@@ -118,68 +95,53 @@ impl<D, R> EntryFactory<D, R> where D: Digest, R: ReadOpener {
 mod test {
     use super::*;
     use hamcrest::prelude::*;
-    use std::io::{Cursor, Read, Write};
+    use std::io::{Cursor, Write};
     use std::io::Error as IOError;
     use std::path::PathBuf;
     use std::sync::mpsc::channel;
     use std::vec::Vec;
 
     use crypto::md5::Md5;
-    use crypto::digest::Digest;
 
-    struct CursorFactory;
-
-    impl ReadOpener for CursorFactory {
-        type Readable = Cursor<Vec<u8>>;
-
-        fn get_reader(&mut self, path: &PathBuf) -> Result<Cursor<Vec<u8>>, IOError> {
-            let mut cursor = Cursor::new(Vec::new());
-            // use path &str as file contents for testing
-            let data: &[u8] = path.as_path().to_str().unwrap().as_bytes();
-            assert_that!(cursor.write(&data).unwrap(),
-                         is(equal_to(data.len())));
-            cursor.set_position(0);
-            Ok(cursor)
-        }
-    }
+    use utils::{CursorReadOpener, HashDigester};
 
     #[test]
     fn test_entry_factory_creates_entry() {
         let path = PathBuf::from("my/test/file-name");
-        let expected = create_expected_entry(&path);
+        let mut digester = create_digester(&path);
+        let primary = digester.get_digest(&path).unwrap();
+        let expected = Entry::new(&path, primary);
 
-        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
+        let mut factory = EntryFactory::new(digester);
         let entry = factory.create(path).unwrap();
 
-        assert_that!(entry, is(equal_to(expected)));
-    }
-
-    #[test]
-    fn test_entry_factory_resets_digest() {
-        let path = PathBuf::from("my/test/file-name");
-        let expected = create_expected_entry(&path);
-
-        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
-
-        factory.create(path.clone()).unwrap();
-        // This second create will fail if initial_digest is not reset.
-        let entry = factory.create(path).unwrap();
         assert_that!(entry, is(equal_to(expected)));
     }
 
     #[test]
     fn test_entry_factory_send_many() {
-        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
+        let mut opener = CursorReadOpener::new();
 
-        let paths = vec![PathBuf::from("a.jpg"),
-                         PathBuf::from("b.jpg"),
-                         PathBuf::from("c.jpg"),
-                         PathBuf::from("d.jpg")];
+        let paths = vec![
+            PathBuf::from("a.jpg"),
+            PathBuf::from("b.jpg"),
+            PathBuf::from("c.jpg"),
+            PathBuf::from("d.jpg"),
+        ];
+
+        for path in & paths {
+            opener.add_path(&path, create_cursor(&path));
+        }
+
+        let mut digester = HashDigester::new(Md5::new(), opener);
         let (send, recv) = channel::<Result<Entry, IOError>>();
 
-        let expected: Vec<Entry> = paths.iter()
-            .map(|ref x| create_expected_entry(&x))
+        let expected: Vec<Entry> = paths
+            .iter()
+            .map(|ref x| Entry::new(&x, digester.get_digest(&x).unwrap()))
             .collect();
+
+        let mut factory = EntryFactory::new(digester);
 
         assert!(factory.send_many(paths, &send).is_ok());
 
@@ -196,14 +158,23 @@ mod test {
 
     #[test]
     fn test_entry_factory_send_many_returns_all_failed_paths() {
-        let mut factory = EntryFactory::new(Md5::new(), CursorFactory);
+        let mut opener = CursorReadOpener::new();
+        let paths = vec![
+            PathBuf::from("a.jpg"),
+            PathBuf::from("b.jpg"),
+            PathBuf::from("c.jpg"),
+            PathBuf::from("d.jpg"),
+        ];
 
-        let paths = vec![PathBuf::from("a.jpg"),
-                         PathBuf::from("b.jpg"),
-                         PathBuf::from("c.jpg"),
-                         PathBuf::from("d.jpg")];
+        for path in & paths {
+            opener.add_path(&path, create_cursor(&path));
+        }
+
         let (send, recv) = channel::<Result<Entry, IOError>>();
         drop(recv);
+
+        let digester = HashDigester::new(Md5::new(), opener);
+        let mut factory = EntryFactory::new(digester);
 
         let err: EntrySendError = factory.send_many(paths.clone(), &send).unwrap_err();
         let failed_paths: Vec<PathBuf> = err.failed.into_iter().map(|r| r.unwrap()).collect();
@@ -211,14 +182,19 @@ mod test {
         assert_that!(failed_paths, is(equal_to(paths)));
     }
 
-    fn create_expected_entry(path: &PathBuf) -> Entry {
-        let mut buf = Vec::new();
-        let mut reader = CursorFactory.get_reader(&path).unwrap();
-        assert!(reader.read_to_end(&mut buf).is_ok());
+    /// Create a `HashDigester` using path &str as the file contents for
+    /// `CursorReadOpener`
+    fn create_digester(path: &PathBuf) -> HashDigester<Md5, CursorReadOpener> {
+        let mut opener = CursorReadOpener::new();
+        opener.add_path(&path, create_cursor(&path));
+        return HashDigester::new(Md5::new(), opener);
+    }
 
-        let mut md5 = Md5::new();
-        md5.input(&mut buf[..]);
-
-        Entry::new(path.clone(), md5.result_str())
+    /// Create a `Cursor` using path &str as the file contents for testing
+    fn create_cursor(path: &PathBuf) -> Cursor<Vec<u8>> {
+        let mut cursor = Cursor::new(Vec::new());
+        let data: &[u8] = path.as_path().to_str().unwrap().as_bytes();
+        assert_that!(cursor.write(&data).unwrap(), is(equal_to(data.len())));
+        return cursor;
     }
 }

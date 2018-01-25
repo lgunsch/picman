@@ -31,7 +31,7 @@ use walker::Walker;
 use logger::Logger;
 use path::Paths;
 use entry::{Entry, EntryFactory};
-use utils::FileReadOpener;
+use utils::{FileReadOpener, HashDigester};
 
 static VERSION: &'static str = "v0.1.0-dev";
 
@@ -118,7 +118,8 @@ fn spawn_factory_workers(threads: usize, paths: &Vec<PathBuf>,
 }
 
 fn factory_worker(paths: Vec<PathBuf>, sender: Sender<Result<Entry, IOError>>) {
-    let mut factory = EntryFactory::new(Md5::new(), FileReadOpener::new());
+    let digester = HashDigester::new(Md5::new(), FileReadOpener::new());
+    let mut factory = EntryFactory::new(digester);
     match factory.send_many(paths, &sender) {
         Ok(_) => {},
         Err(err) => {

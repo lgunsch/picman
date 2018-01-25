@@ -5,11 +5,12 @@ use crypto::md5::Md5;
 use hamcrest::prelude::*;
 
 use entry::{Entry, EntryFactory};
-use utils::FileReadOpener;
+use utils::{FileReadOpener, HashDigester};
 
 #[test]
 fn entry_factory_creates_entry() {
-    let mut factory = EntryFactory::new(Md5::new(), FileReadOpener::new());
+    let digester = HashDigester::new(Md5::new(), FileReadOpener::new());
+    let mut factory = EntryFactory::new(digester);
     let path = PathBuf::from("./src/tests/assets/barbara.png");
     let entry = factory.create(path.clone()).unwrap();
 
