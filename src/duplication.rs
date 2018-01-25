@@ -17,7 +17,7 @@ impl DuplicationMap {
     pub fn push(&mut self, entry: Entry) {
         let key = entry.primary_hash.clone();
         match self.map.entry(key) {
-            Occupied(o) => o.into_mut().push(entry),
+            Occupied(o) => o.into_mut().push(entry),  // FIXME: Add a secondary hash here somehow
             Vacant(v) => v.insert(Vec::new()).push(entry),
         };
     }
