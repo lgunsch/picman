@@ -2,6 +2,7 @@ use path::PathExtensionFilter;
 use std::path::PathBuf;
 use std::vec::Vec;
 
+#[derive(Default)]
 pub struct Paths {
     paths: Vec<PathBuf>,
 }
@@ -16,7 +17,7 @@ impl Paths {
     }
 
     pub fn add_many(&mut self, paths: Vec<PathBuf>) {
-        for p in paths.into_iter() {
+        for p in paths {
             self.add(p);
         }
     }
@@ -26,7 +27,7 @@ impl Paths {
     }
 
     pub fn apply_filter(&mut self, filter: &PathExtensionFilter) {
-        self.paths.retain(|p| filter.is_match(&p))
+        self.paths.retain(|p| filter.is_match(p))
     }
 
     pub fn count(&self) -> usize {

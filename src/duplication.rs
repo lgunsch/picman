@@ -4,6 +4,7 @@ use std::vec::Vec;
 
 use entry::Entry;
 
+#[derive(Default)]
 pub struct DuplicationMap {
     map: HashMap<String, Vec<Entry>>,
 }
@@ -43,7 +44,7 @@ impl Iterator for DuplicationMapIterator {
         for entry in entries {
             // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
 
-            match curr.last().map(|e| e.clone()) {
+            match curr.last().cloned() {
                 Some(e) => {
                     // it's a bug if the secondary_hash doesn't exist by now
                     if e.secondary_hash.as_ref().unwrap() == entry.secondary_hash.as_ref().unwrap()
@@ -57,7 +58,7 @@ impl Iterator for DuplicationMapIterator {
                 None => curr.push(entry),
             };
         }
-        return self.duplicates.pop();
+        self.duplicates.pop()
     }
 }
 

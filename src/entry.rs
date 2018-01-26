@@ -94,7 +94,7 @@ where
         sender: &Sender<Result<Entry, IOError>>,
     ) -> Result<(), EntrySendError> {
         let mut unsendable = Vec::new();
-        for path in paths.into_iter() {
+        for path in paths {
             let entry = self.create(path);
             match sender.send(entry) {
                 Ok(_) => {}
@@ -105,7 +105,7 @@ where
             }
         }
 
-        if unsendable.len() > 0 {
+        if unsendable.is_empty() {
             Err(EntrySendError { failed: unsendable })
         } else {
             Ok(())

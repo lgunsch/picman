@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::vec::Vec;
 
+#[derive(Default)]
 pub struct PathExtensionFilter {
     extension_patterns: HashMap<String, Regex>,
 }
@@ -16,17 +17,17 @@ impl PathExtensionFilter {
 
     pub fn add_jpeg(&mut self) -> Result<(), Error> {
         try!(self.add_extension_regex("jpeg".to_string(), r"(?i)jpe?g$".to_string()));
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_png(&mut self) -> Result<(), Error> {
         try!(self.add_extension_regex("png".to_string(), r"(?i)png$".to_string()));
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_bmp(&mut self) -> Result<(), Error> {
         try!(self.add_extension_regex("bmp".to_string(), r"(?i)bmp$".to_string()));
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_extension_regex<T: Into<String>>(
@@ -36,25 +37,25 @@ impl PathExtensionFilter {
     ) -> Result<(), Error> {
         let re = try!(Regex::new(&expr.into()));
         self.extension_patterns.insert(extension.into(), re);
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_many_extension_regex<T: Into<String>>(
         &mut self,
         expressions: Vec<(T, T)>,
     ) -> Result<(), Error> {
-        for (name, expr) in expressions.into_iter() {
+        for (name, expr) in expressions {
             try!(self.add_extension_regex(name.into(), expr.into()));
         }
-        return Ok(());
+        Ok(())
     }
 
     pub fn is_match(&self, path: &Path) -> bool {
-        for (_, re) in self.extension_patterns.iter() {
+        for re in self.extension_patterns.values() {
             let ext = match path.extension() {
                 Some(ext) => match ext.to_str() {
                     Some(s) => s,
-                    None => continue, // not a valid match, its not even unicode
+                    None => continue, // not a valid match, it's not even unicode
                 },
                 None => "",
             };

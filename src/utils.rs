@@ -15,6 +15,7 @@ pub trait ReadOpener {
 }
 
 /// `ReadOpener` implementation using `File::open`
+#[derive(Default)]
 pub struct FileReadOpener;
 
 impl FileReadOpener {
@@ -55,7 +56,7 @@ where
 
     /// Computes and returns a String message digest of the file.
     pub fn get_digest(&mut self, path: &PathBuf) -> Result<String, IOError> {
-        let mut reader = BufReader::new(try!(self.read_opener.get_reader(&path)));
+        let mut reader = BufReader::new(try!(self.read_opener.get_reader(path)));
 
         loop {
             let nread = {
@@ -76,6 +77,7 @@ where
 }
 
 // `ReadOpener` implementation using a map of path to `Cursor`
+#[derive(Default)]
 pub struct CursorReadOpener {
     cursors: HashMap<PathBuf, Cursor<Vec<u8>>>,
 }
