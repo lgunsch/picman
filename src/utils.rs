@@ -32,30 +32,29 @@ impl ReadOpener for FileReadOpener {
     }
 }
 
+/// Provides a method to return a message digest string when given a file path
+pub trait Digester {
+    fn get_digest(&mut self, path: &PathBuf) -> Result<String, IOError>;
+}
+
 /// Computes message digest of files
-pub struct HashDigester<D, R>
-where
-    D: Digest,
-    R: ReadOpener,
-{
+pub struct HashDigester<D: Digest, R: ReadOpener> {
     digest: D,
     read_opener: R,
 }
 
-impl<D, R> HashDigester<D, R>
-where
-    D: Digest,
-    R: ReadOpener,
-{
+impl<D: Digest, R: ReadOpener> HashDigester<D, R> {
     pub fn new(digest: D, read_opener: R) -> HashDigester<D, R> {
         HashDigester {
             digest: digest,
             read_opener: read_opener,
         }
     }
+}
 
+impl<D: Digest, R: ReadOpener> Digester for HashDigester<D, R> {
     /// Computes and returns a String message digest of the file.
-    pub fn get_digest(&mut self, path: &PathBuf) -> Result<String, IOError> {
+    fn get_digest(&mut self, path: &PathBuf) -> Result<String, IOError> {
         let mut reader = BufReader::new(try!(self.read_opener.get_reader(path)));
 
         loop {
@@ -89,8 +88,11 @@ impl CursorReadOpener {
         }
     }
 
-    pub fn add_path(&mut self, path: &PathBuf, cursor: Cursor<Vec<u8>>) {
-        self.cursors.insert(path.clone(), cursor);
+    pub fn add_path<P>(&mut self, path: P, cursor: Cursor<Vec<u8>>)
+    where
+        P: Into<PathBuf>,
+    {
+        self.cursors.insert(path.into(), cursor);
     }
 }
 

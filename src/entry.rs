@@ -4,8 +4,7 @@ use std::fmt;
 use std::path::PathBuf;
 use std::sync::mpsc::{SendError, Sender};
 
-use crypto::digest::Digest;
-use utils::{HashDigester, ReadOpener};
+use utils::Digester;
 
 /// Represents a single file, with its computed hash digest values
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -61,21 +60,13 @@ impl Error for EntrySendError {
 
 /// Creates `Entry` instances from a `PathBuf`, and populates them
 /// with an initial `Digest` hash.
-pub struct EntryFactory<D, R>
-where
-    D: Digest,
-    R: ReadOpener,
-{
-    primary_digester: HashDigester<D, R>,
+pub struct EntryFactory<D: Digester> {
+    primary_digester: D,
 }
 
-impl<D, R> EntryFactory<D, R>
-where
-    D: Digest,
-    R: ReadOpener,
-{
-    /// Creates an `EntryFactory` using the initial `Digest`, and `ReadOpener`.
-    pub fn new(digester: HashDigester<D, R>) -> EntryFactory<D, R> {
+impl<D: Digester> EntryFactory<D> {
+    /// Creates an `EntryFactory` using the initial `Digester`.
+    pub fn new(digester: D) -> EntryFactory<D> {
         EntryFactory {
             primary_digester: digester,
         }
@@ -125,7 +116,7 @@ mod test {
 
     use crypto::md5::Md5;
 
-    use utils::{CursorReadOpener, HashDigester};
+    use utils::{CursorReadOpener, Digester, HashDigester};
 
     #[test]
     fn test_entry_factory_creates_entry() {
