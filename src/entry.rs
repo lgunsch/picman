@@ -27,6 +27,17 @@ impl Entry {
             secondary_hash: None,
         }
     }
+
+    pub fn is_duplicate(&self, other: &Entry) -> bool {
+        return self.primary_hash == other.primary_hash &&
+            match self.secondary_hash {
+                Some(ref entry_hash) => match other.secondary_hash {
+                    Some(ref other_hash) => entry_hash == other_hash,
+                    None => false,
+            },
+            None => false,
+        }
+    }
 }
 
 impl fmt::Display for Entry {
@@ -46,7 +57,7 @@ pub struct EntrySendError {
     pub failed: Vec<Result<PathBuf, IOError>>,
 }
 
-impl fmt::Display for EntrySendError {
+ impl fmt::Display for EntrySendError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Hello from EntrySendError!")
     }
