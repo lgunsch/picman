@@ -7,44 +7,39 @@ use entry::Entry;
 use utils::{Digester};
 
 #[derive(Default)]
-pub struct DuplicationMap<D: Digester> {
+pub struct DuplicationMap {
     map: HashMap<String, Vec<Entry>>,
-    secondary_digester: D,
 }
 
-impl<D: Digester> DuplicationMap<D> {
-    pub fn new(digester: D) -> DuplicationMap<D> {
+impl DuplicationMap {
+    pub fn new() -> DuplicationMap {
         let map = HashMap::new();
-        DuplicationMap { map: map, secondary_digester: digester }
+        DuplicationMap { map: map }
     }
 
-    pub fn push(&mut self, entry: Entry) -> Result<(), IOError>{
+    pub fn push<D: Digester>(&mut self, secondary_digester: &mut D, entry: Entry)
+                             -> Result<(), IOError>
+    {
         let key = entry.primary_hash.clone();
         match self.map.entry(key) {
             Occupied(o) => {
                 let duplicates = o.into_mut();
                 duplicates.push(entry);
-                self.add_secondary_hash(duplicates)?;
-            //     let mut hash = self.secondary_digester.get_digest(&entry.path)?;
-            //     entry.secondary_hash = Some(hash);
-            //     o.into_mut().push(entry);
+
+                for entry in duplicates {
+                    match entry.secondary_hash {
+                        Some(_) => continue,
+                        None => {
+                            let mut hash = secondary_digester.get_digest(&entry.path)?;
+                            entry.secondary_hash = Some(hash);
+                        },
+                    }
+                }
             },
             Vacant(v) => v.insert(Vec::new()).push(entry),
         };
-        Ok(())
-    }
 
-    fn add_secondary_hash(&mut self, entries: &mut Vec<Entry>) -> Result<(), IOError> {
-        for entry in entries {
-            match entry.secondary_hash {
-                Some(_) => continue,
-                None => {
-                    let mut hash = self.secondary_digester.get_digest(&entry.path)?;
-                    entry.secondary_hash = Some(hash);
-                },
-            }
-        }
-        return Ok(())
+        Ok(())
     }
 }
 
@@ -82,11 +77,15 @@ impl Iterator for DuplicationMapIterator {
                 None => curr.push(entry),
             };
         }
-        self.duplicates.pop()  // FIXME: if this is not empty, pop before doing anything
+        if self.duplicates.is_empty() {
+            return Some(curr);
+        } else {
+            return self.duplicates.pop()  // FIXME: if this is not empty, pop before doing anything
+        }
     }
 }
 
-impl<D: Digester> IntoIterator for DuplicationMap<D> {
+impl IntoIterator for DuplicationMap {
     type Item = Vec<Entry>;
     type IntoIter = DuplicationMapIterator;
 
@@ -147,7 +146,10 @@ mod test {
         digester.add_path_digest("entry-1", Ok("second-hash-1".to_owned()));
         digester.add_path_digest("entry-2", Ok("second-hash-1".to_owned()));
 
-        let map = DuplicationMap::new(digester);
+        let mut map = DuplicationMap::new();
+        assert!(map.push(&mut digester, Entry::new("entry-1", "hash-1")).is_ok());
+        assert!(map.push(&mut digester, Entry::new("entry-2", "hash-1")).is_ok());
+
         let mut iter = map.into_iter();
 
         let expected = Some(vec![entry("entry-1", "hash-1", "second-hash-1"),
@@ -186,11 +188,11 @@ mod test {
     //     assert_that!(iter.next(), is(equal_to(Some(vec![entry2]))));
     // }
 
-    fn add_entry<D: Digester>(map: &mut DuplicationMap<D>, path: &str, hash: &str) -> Entry {
-        let entry = Entry::new(path, hash);
-        map.push(entry.clone());
-        return entry;
-    }
+    // fn add_entry<D: Digester>(map: &mut DuplicationMap<D>, path: &str, hash: &str) -> Entry {
+    //     let entry = Entry::new(path, hash);
+    //     map.push(entry.clone());
+    //     return entry;
+    // }
 
     fn create_cursor(hash: &str) -> Cursor<Vec<u8>> {
         // use path &str as file contents for testing

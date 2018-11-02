@@ -33,7 +33,8 @@ impl Entry {
             match self.secondary_hash {
                 Some(ref entry_hash) => match other.secondary_hash {
                     Some(ref other_hash) => entry_hash == other_hash,
-                    None => false,
+                    // TODO: below should have a better error method
+                    None => panic!("the secondary hash is required to be computed before comparison"),
             },
             None => false,
         }
