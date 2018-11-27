@@ -52,36 +52,41 @@ impl Iterator for DuplicationMapIterator {
     type Item = Vec<Entry>;
 
     fn next(&mut self) -> Option<Vec<Entry>> {
-        // remove from duplicates first
+        // return any leftovers from previous run first
+        if !self.duplicates.is_empty() {
+            return self.duplicates.pop();
+        }
+
         let entries: Vec<Entry> = match self.map_iter.next() {
             Some((_k, v)) => v,
-            None => return None, // FIXME: does this abandon some entries?
+            None => return None,
         };
 
-        let mut curr: Vec<Entry> = Vec::new();
-        for entry in entries {
-            // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
+        // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
+        // entries.sort();
 
-            match curr.last().cloned() {
-                Some(last) => {
+        let mut dups: Vec<Entry> = Vec::new();
+        for entry in entries {
+            match dups.last().cloned() {
+                Some(prev) => {
                     // it's a bug if the secondary_hash doesn't exist by now
-                    if last.is_duplicate(&entry) {
-                        curr.push(entry);
+                    if prev.is_duplicate(&entry) {
+                        dups.push(entry);
                     } else {
-                        // save the previous duplicate list,
-                        // get ready for the next list
-                        self.duplicates.push(curr);
-                        curr = vec![entry];
+                        // save the previous duplicate list, get ready for the next list
+                        self.duplicates.push(dups);
+                        dups  = vec![entry];
                     }
                 }
-                None => curr.push(entry),
+                None => dups.push(entry),
             };
         }
-        if self.duplicates.is_empty() {
-            return Some(curr);
-        } else {
-            return self.duplicates.pop()  // FIXME: if this is not empty, pop before doing anything
+
+        if !dups.is_empty() {
+            self.duplicates.push(dups);
         }
+
+        return self.duplicates.pop();
     }
 }
 
@@ -137,7 +142,7 @@ mod test {
     }
 
     #[test]
-    fn test_duplication_map_groups_primary_hash_duplicate_entries() {
+    fn test_duplication_map_groups_duplicate_entries() {
         let mut opener = CursorReadOpener::new();
         opener.add_path("entry-1", create_cursor("hash-1"));
         opener.add_path("entry-2", create_cursor("hash-1"));
@@ -158,41 +163,68 @@ mod test {
         assert_that!(iter.next(), is(equal_to(expected)));
     }
 
-    // #[test]
-    // fn test_duplication_map_splits_unique_entries() {
-    //     let mut map = DuplicationMap::new();
-    //     add_entry(&mut map, "entry-1", "hash-1");
-    //     add_entry(&mut map, "entry-2", "hash-2");
+    #[test]
+    fn test_duplication_map_splits_unique_entries() {
+        let mut opener = CursorReadOpener::new();
+        opener.add_path("entry-1", create_cursor("hash-1"));
+        opener.add_path("entry-2", create_cursor("hash-2"));
 
-    //     let mut iter = map.into_iter();
+        let mut secondary_digester = StubDigester::new();
+        secondary_digester.add_path_digest("entry-1", Ok("second-hash-1".to_owned()));
+        secondary_digester.add_path_digest("entry-2", Ok("second-hash-2".to_owned()));
 
-    //     assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
-    //     assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
-    // }
+        let mut map = DuplicationMap::new();
+        assert!(map.push(&mut secondary_digester, Entry::new("entry-1", "hash-1")).is_ok());
+        assert!(map.push(&mut secondary_digester, Entry::new("entry-2", "hash-2")).is_ok());
 
-    // #[test]
-    // fn test_duplication_map_splits_second_hash_unique() {
-    //     let mut map = DuplicationMap::new();
-    //     let mut entry1 = Entry::new("entry-1", "hash-1");
-    //     let mut entry2 = Entry::new("entry-2", "hash-1");
+        let mut iter = map.into_iter();
 
-    //     entry1.secondary_hash = Some("hash-1-1".into());
-    //     entry2.secondary_hash = Some("hash-1-2".into());
+        assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
+        assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
+    }
 
-    //     map.push(entry1.clone());
-    //     map.push(entry2.clone());
+    #[test]
+    fn test_duplication_map_splits_second_hash_unique() {
+        let mut secondary_digester = StubDigester::new();
+        secondary_digester.add_path_digest("entry-1", Ok("second-hash-1".to_owned()));
+        secondary_digester.add_path_digest("entry-2", Ok("second-hash-2".to_owned()));
 
-    //     let mut iter = map.into_iter();
+        let mut map = DuplicationMap::new();
+        assert!(map.push(&mut secondary_digester, Entry::new("entry-1", "hash-1")).is_ok());
+        assert!(map.push(&mut secondary_digester, Entry::new("entry-2", "hash-1")).is_ok());
 
-    //     assert_that!(iter.next(), is(equal_to(Some(vec![entry1]))));
-    //     assert_that!(iter.next(), is(equal_to(Some(vec![entry2]))));
-    // }
+        let mut iter = map.into_iter();
 
-    // fn add_entry<D: Digester>(map: &mut DuplicationMap<D>, path: &str, hash: &str) -> Entry {
-    //     let entry = Entry::new(path, hash);
-    //     map.push(entry.clone());
-    //     return entry;
-    // }
+        assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
+        assert_that!(iter.next().unwrap().len(), is(equal_to(1)));
+    }
+
+    #[test]
+    fn test_duplication_map_groups_duplicate_entries_sorted() {
+        let mut opener = CursorReadOpener::new();
+        opener.add_path("entry-1", create_cursor("hash-1"));
+        opener.add_path("entry-2", create_cursor("hash-1"));
+        opener.add_path("entry-3", create_cursor("hash-1"));
+
+        let mut digester = StubDigester::new();
+        digester.add_path_digest("entry-1", Ok("second-hash-1".to_owned()));
+        digester.add_path_digest("entry-2", Ok("second-hash-2".to_owned()));
+        digester.add_path_digest("entry-3", Ok("second-hash-1".to_owned()));
+
+        let mut map = DuplicationMap::new();
+        assert!(map.push(&mut digester, Entry::new("entry-1", "hash-1")).is_ok());
+        assert!(map.push(&mut digester, Entry::new("entry-2", "hash-1")).is_ok());
+        assert!(map.push(&mut digester, Entry::new("entry-3", "hash-1")).is_ok());
+
+        let mut iter = map.into_iter();
+
+        let expected_a = vec![entry("entry-1", "hash-1", "second-hash-1"),
+                              entry("entry-3", "hash-1", "second-hash-1")];
+        let expected_b = vec![entry("entry-2", "hash-1", "second-hash-2")];
+
+        assert_that!(iter.next().unwrap(), any_of!(equal_to(expected_a.clone()), equal_to(expected_b.clone())));
+        assert_that!(iter.next().unwrap(), any_of!(equal_to(expected_a), equal_to(expected_b)));
+    }
 
     fn create_cursor(hash: &str) -> Cursor<Vec<u8>> {
         // use path &str as file contents for testing
