@@ -57,33 +57,28 @@ impl Iterator for DuplicationMapIterator {
             return self.duplicates.pop();
         }
 
-        let entries: Vec<Entry> = match self.map_iter.next() {
+        let possible_duplicates: Vec<Entry> = match self.map_iter.next() {
             Some((_k, v)) => v,
             None => return None,
         };
 
-        // FIXME: entries is not sorted, so it could be hash-1, hash-2, hash-1
-        // entries.sort();
-
-        let mut dups: Vec<Entry> = Vec::new();
-        for entry in entries {
-            match dups.last().cloned() {
-                Some(prev) => {
-                    // it's a bug if the secondary_hash doesn't exist by now
-                    if prev.is_duplicate(&entry) {
-                        dups.push(entry);
-                    } else {
-                        // save the previous duplicate list, get ready for the next list
-                        self.duplicates.push(dups);
-                        dups  = vec![entry];
-                    }
-                }
-                None => dups.push(entry),
-            };
+        // secondary_hash will not exist if there is only a single entry
+        if possible_duplicates.len() == 1 {
+            return Some(possible_duplicates);
         }
 
-        if !dups.is_empty() {
-            self.duplicates.push(dups);
+        // find duplicates by grouping entries on secondary_hash
+        let mut unique_entries: HashMap<String, Vec<Entry>> = HashMap::new();
+        for entry in possible_duplicates {
+            let key = entry.secondary_hash.clone()
+                .expect("secondary_hash must exist for duplicated primary_hash");
+            let mut dups = unique_entries.entry(key)
+                .or_insert_with(|| Vec::new());
+            dups.push(entry);
+        }
+
+        for (_, entries) in unique_entries {
+            self.duplicates.push(entries)
         }
 
         return self.duplicates.pop();
